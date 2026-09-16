@@ -1,0 +1,539 @@
+<!doctype html><html lang="hu"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GA4 Insights – Kezelési útmutató</title>
+<meta name="description" content="A GA4 Insights mérési és marketing audit eszköz kezelési útmutatója: demó, saját elemzés, AI kulcs, eredmények, exportok, adatkezelés.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📊</text></svg>">
+<style>
+:root {
+  --bg: #f7f7f5; --surface: #ffffff; --surface-2: #f0f0ed; --border: #e2e2dd; --border-strong: #cfcfc8;
+  --text: #1a1a18; --text-dim: #6b6b64; --text-faint: #97978e;
+  --accent: #b4551f; --accent-soft: #fdf1e8; --accent-border: #f0d3bd;
+  --critical: #c0392b; --critical-bg: #fdeceb; --warning: #b8730a; --warning-bg: #fdf4e3;
+  --opportunity: #1f6f9c; --opportunity-bg: #eaf3f9; --ok: #2f7d4f; --ok-bg: #ebf6ef;
+  --radius: 10px; --radius-sm: 6px;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16161a; --surface: #1e1e23; --surface-2: #26262c; --border: #32323a; --border-strong: #43434d;
+    --text: #ececef; --text-dim: #a0a0aa; --text-faint: #6e6e78;
+    --accent: #e08a52; --accent-soft: #2b2119; --accent-border: #4a3524;
+    --critical: #f27a6d; --critical-bg: #2e1c1a; --warning: #e3ab52; --warning-bg: #2c2418;
+    --opportunity: #6cb4dd; --opportunity-bg: #17262e; --ok: #6bc490; --ok-bg: #16261d;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+body {
+  margin: 0; font-family: var(--sans); font-size: 15.5px; line-height: 1.6;
+  color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 24px 80px; }
+header.masthead {
+  display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap;
+  padding: 22px 0 18px; border-bottom: 1px solid var(--border); margin-bottom: 28px;
+}
+.logo { font-weight: 650; font-size: 16px; letter-spacing: -.01em; display: flex; align-items: center; gap: 9px; }
+.logo .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.logo small { font-weight: 450; color: var(--text-dim); font-size: 14px; }
+.spacer { flex: 1; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff;
+  padding: 8px 14px; border-radius: var(--radius-sm); font-weight: 550; font-size: 14px; text-decoration: none; white-space: nowrap;
+}
+.btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
+h1 { font-size: 30px; line-height: 1.2; letter-spacing: -.02em; margin: 0 0 8px; font-weight: 650; }
+.lede { color: var(--text-dim); margin: 0 0 18px; font-size: 16.5px; max-width: 64ch; }
+h2 {
+  font-size: 21px; letter-spacing: -.01em; font-weight: 640; margin: 0 0 12px;
+  display: flex; align-items: baseline; gap: 10px;
+}
+h3 { font-size: 16.5px; font-weight: 630; margin: 24px 0 8px; }
+p, ul, ol { margin: 0 0 12px; }
+ul, ol { padding-left: 22px; }
+li { margin: 4px 0; }
+li > ul, li > ol { margin: 4px 0; }
+.num {
+  display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border);
+  font-size: 14px; font-weight: 700; flex: none; transform: translateY(-2px);
+}
+section.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 22px 24px 12px; margin: 0 0 18px; box-shadow: var(--shadow);
+}
+code { font-family: var(--mono); font-size: .88em; background: var(--surface-2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; }
+kbd {
+  font-family: var(--mono); font-size: .85em; background: var(--surface); border: 1px solid var(--border-strong);
+  border-bottom-width: 2px; padding: 0 5px; border-radius: 4px; white-space: nowrap;
+}
+b.ui, .ui { font-weight: 650; }
+.note {
+  border-left: 3px solid var(--opportunity); background: var(--opportunity-bg);
+  padding: 10px 14px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 12px 0 14px;
+}
+.note.warn { border-left-color: var(--warning); background: var(--warning-bg); }
+.note.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+.note > :last-child { margin-bottom: 0; }
+.pill {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--warning); color: var(--surface);
+  font-weight: 700; font-size: 12px; letter-spacing: .06em; vertical-align: 1px;
+}
+.chip {
+  display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 13px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text-dim); white-space: nowrap;
+}
+.chip.critical { color: var(--critical); background: var(--critical-bg); border-color: transparent; }
+.chip.warning { color: var(--warning); background: var(--warning-bg); border-color: transparent; }
+.chip.opportunity { color: var(--opportunity); background: var(--opportunity-bg); border-color: transparent; }
+.chip.ok { color: var(--ok); background: var(--ok-bg); border-color: transparent; }
+nav.toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 22px 8px; margin: 0 0 22px; }
+nav.toc .label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); font-weight: 600; margin-bottom: 6px; }
+nav.toc ul { columns: 2; column-gap: 32px; margin: 0 0 8px; padding: 0; list-style: none; }
+nav.toc li { break-inside: avoid; margin: 0; padding: 2px 0; }
+nav.toc a { text-decoration: none; }
+nav.toc a:hover { text-decoration: underline; }
+.steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 6px 0 14px; padding: 0; list-style: none; counter-reset: s; }
+.steps3 li { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin: 0; counter-increment: s; }
+.steps3 li::before { content: counter(s); display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+.steps3 b { display: block; }
+.tablewrap { overflow-x: auto; margin: 6px 0 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+details { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; margin: 0 0 10px; background: var(--surface); }
+details summary { cursor: pointer; font-weight: 600; }
+details[open] summary { margin-bottom: 6px; }
+details > :last-child { margin-bottom: 0; }
+.top { font-size: 13px; text-decoration: none; margin-left: auto; font-weight: 450; color: var(--text-faint); }
+footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 26px; display: flex; gap: 10px 16px; flex-wrap: wrap; align-items: center; }
+@media (max-width: 640px) {
+  body { font-size: 15px; }
+  .wrap { padding: 0 16px 60px; }
+  h1 { font-size: 24px; }
+  h2 { font-size: 18.5px; }
+  section.card { padding: 18px 16px 8px; }
+  nav.toc { padding: 14px 16px 6px; }
+  nav.toc ul { columns: 1; }
+  .steps3 { grid-template-columns: 1fr; }
+  .masthead .btn { padding: 6px 11px; font-size: 13.5px; }
+}
+@media print {
+  :root { --bg: #fff; --surface: #fff; --shadow: none; }
+  body { font-size: 11pt; background: #fff; color: #000; }
+  .wrap { max-width: none; padding: 0; }
+  .masthead .btn, .top, footer.foot a.btn { display: none; }
+  section.card { box-shadow: none; break-inside: auto; border-color: #ccc; }
+  h2, h3 { break-after: avoid; }
+  nav.toc { break-after: page; }
+  details { border: 0; padding: 0; }
+  a { color: inherit; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="logo"><span class="dot"></span> GA4 Insights <small>· Kezelési útmutató</small></div>
+  <div class="spacer"></div>
+  <a class="btn" href="index.html">← Vissza az apphoz</a>
+</header>
+
+<main>
+<h1 id="top">Kezelési útmutató</h1>
+<p class="lede">
+  A GA4 Insights egy böngészőben futó, egyfájlos audit eszköz. Egy weboldal címéből megnézi a
+  <b>GA4</b>, <b>Google Tag Manager</b>, <b>Google Ads</b>, <b>Meta Pixel</b> és <b>Consent Mode</b> beállításokat,
+  alap SEO és technikai auditot készít, saját AI API kulccsal pedig részletes auditot és online marketing javaslatokat is ad.
+</p>
+
+<div class="note ok">
+  <p><b>Az adataid a böngésződben maradnak.</b> Nincs regisztráció és nincs saját szerver: az elemzések, a beállítások és az AI kulcs
+  csak ebben a böngészőben tárolódnak. Részletek: <a href="#adatkezeles">Adatkezelés és biztonság</a>.</p>
+</div>
+<div class="note warn">
+  <p><span class="pill">DEMÓ</span> Az online változat megnyitáskor egy <b>kitalált adatokon</b> alapuló mintaelemzést tölt be
+  (<code>pelda-webshop.hu</code>). Az abban látható AI részek előre elkészített minták, nem valódi AI-futás eredményei.</p>
+</div>
+
+<nav class="toc" aria-label="Tartalomjegyzék">
+  <div class="label">Tartalom</div>
+  <ul>
+    <li><a href="#gyors-kezdes">Gyors kezdés 3 lépésben</a></li>
+    <li><a href="#demo">1. Demó megnézése</a></li>
+    <li><a href="#sajat-elemzes">2. Saját elemzés indítása URL-ből</a></li>
+    <li><a href="#kezi-mod">Kézi mód (forrás beillesztése)</a></li>
+    <li><a href="#ai-kulcs">3. AI kulcs beállítása (ingyenes Gemini)</a></li>
+    <li><a href="#eredmeny">Az eredmény részei</a></li>
+    <li><a href="#ai-elemzesek">Részletes audit és marketing elemzés</a></li>
+    <li><a href="#feladatok">Feladatok és Things 3</a></li>
+    <li><a href="#spec-es-utm">Eszközök: mérési specifikáció, UTM</a></li>
+    <li><a href="#elozmenyek">Előzmények és ügyfelek</a></li>
+    <li><a href="#export">Exportok (PDF, Markdown, CSV, JSON)</a></li>
+    <li><a href="#beallitasok">Beállítások áttekintése</a></li>
+    <li><a href="#adatkezeles">Adatkezelés és biztonság</a></li>
+    <li><a href="#gyik">Gyakori kérdések és hibák</a></li>
+  </ul>
+</nav>
+
+<section class="card" id="gyors-kezdes">
+  <h2>Gyors kezdés 3 lépésben <a class="top" href="#top">↑ fel</a></h2>
+  <ol class="steps3">
+    <li><b>Nézd meg a demót</b> Az online változat magától megnyit egy kitalált mintaelemzést – így látod, mit kapsz.</li>
+    <li><b>Elemezz egy saját oldalt</b> Írd be a címet a mezőbe, és nyomd meg az <span class="ui">Elemzés indítása</span> gombot. Ehhez nem kell kulcs.</li>
+    <li><b>Kapcsold be az AI-t</b> <span class="ui">Beállítások</span> → add meg a saját (akár ingyenes Gemini) kulcsodat → <span class="ui">Mentés</span>.</li>
+  </ol>
+</section>
+
+<section class="card" id="demo">
+  <h2><span class="num">1</span> Demó megnézése <a class="top" href="#top">↑ fel</a></h2>
+  <p>Az online változat tetején egy sárga <span class="pill">DEMÓ</span> sáv látható. Ha még nincs saját elemzésed, az app megnyitja a mintaelemzést.</p>
+  <ul>
+    <li>A mintaelemzés fejlécén és az <b class="ui">Előzmények</b> listában <span class="chip warning">DEMÓ</span> címke jelzi, hogy kitalált adat.</li>
+    <li>A <b class="ui">Részletes audit</b> és az <b class="ui">Online marketing elemzés</b> fejlécén a <span class="chip warning">Mintaelemzés (előre generált)</span> címke látszik.</li>
+    <li>A minta a <span class="chip">kézi mód</span> segítségével készült, ezért benne a <b class="ui">Mély SEO vizsgálat</b> nem futtatható – egy saját, URL-ből indított elemzésnél igen.</li>
+  </ul>
+  <h3>A sáv gombjai</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Gomb</th><th>Mit csinál</th></tr></thead>
+    <tbody>
+      <tr><td class="ui">Útmutató</td><td>Megnyitja ezt az útmutatót az appon belül, teljes képernyős nézetben. A <b class="ui">✕ Bezárás</b> gombbal, az <kbd>Esc</kbd> billentyűvel vagy a <b class="ui">← Vissza az apphoz</b> gombbal zárható.</td></tr>
+      <tr><td class="ui">Ingyenes Gemini kulcs ↗</td><td>Új lapon megnyitja a Google AI Studio kulcsoldalát (lásd: <a href="#ai-kulcs">AI kulcs beállítása</a>).</td></tr>
+      <tr><td class="ui">Kulcs megadása</td><td>Megnyitja a <b class="ui">Beállítások</b> ablakot, ahol a kulcsot megadhatod.</td></tr>
+    </tbody>
+  </table></div>
+  <p>A mintaelemzést az <b class="ui">Előzmények</b> listában a <b class="ui">✕</b> gombbal törölheted, de az oldal következő megnyitásakor visszakerül. Ha már van saját elemzésed, a demó nem nyílik meg magától.</p>
+</section>
+
+<section class="card" id="sajat-elemzes">
+  <h2><span class="num">2</span> Saját elemzés indítása URL-ből <a class="top" href="#top">↑ fel</a></h2>
+  <ol>
+    <li>Kattints felül az <b class="ui">Elemzés</b> fülre.</li>
+    <li><i>(Opcionális)</i> Az <b class="ui">Ügyfél:</b> sávban válaszd ki vagy vedd fel az ügyfelet (<b class="ui">+ Új ügyfél</b>). Ügyfél nélkül a riport ügyfélnév nélkül készül.</li>
+    <li>Írd be a vizsgálandó oldal címét a mezőbe, pl. <code>pelda.hu</code> vagy <code>https://pelda.hu/oldal</code>.</li>
+    <li>Kattints az <b class="ui">Elemzés indítása</b> gombra. Menet közben a <b class="ui">■ Leállítás</b> gombbal megszakíthatod.</li>
+    <li>Az eredmény az űrlap alatt jelenik meg, és automatikusan bekerül az <b class="ui">Előzmények</b> közé.</li>
+  </ol>
+  <div class="note">
+    <p><b>Honnan jön az oldal?</b> A böngésző biztonsági okból (CORS) nem tölthet le szabadon idegen oldalt. Az app ezért először közvetlenül próbálkozik,
+    majd nyilvános proxy szolgáltatásokon keresztül. Ha így sem sikerül, a hibaüzenetben megjelenik a <b class="ui">⌨ Váltás kézi módra</b> és a <b class="ui">Proxy beállítások</b> gomb.</p>
+  </div>
+  <p>A sikertelen vagy leállított próbálkozás is bekerül az <b class="ui">Előzmények</b> közé; megnyitva az <b class="ui">Újrapróbálom</b> gombbal indíthatod újra.</p>
+</section>
+
+<section class="card" id="kezi-mod">
+  <h2>Kézi mód – forrás beillesztése <a class="top" href="#top">↑ fel</a></h2>
+  <p>Ha az oldal nem tölthető le, a kézi mód mindig működik, mert nem kell hozzá hálózat.</p>
+  <ol>
+    <li>Kattints az URL mező alatti <b class="ui">⌨ Kézi mód — forrás beillesztése (nem kell hozzá hálózat)</b> gombra.</li>
+    <li>Nyisd meg a vizsgálandó oldalt egy másik lapon, és nyisd meg a forráskódját: <kbd>Ctrl/Cmd</kbd> + <kbd>U</kbd> (Safariban: Fejlesztés → Forrás megtekintése).</li>
+    <li>Jelöld ki és másold ki az egészet: <kbd>Ctrl/Cmd</kbd> + <kbd>A</kbd>, majd <kbd>Ctrl/Cmd</kbd> + <kbd>C</kbd>.</li>
+    <li>Töltsd ki <b class="ui">A vizsgált oldal címe</b> mezőt, és illeszd be a kódot <b class="ui">Az oldal forráskódja</b> mezőbe – vagy tölts be egy mentett HTML fájlt.</li>
+    <li>Kattints az <b class="ui">Elemzés a beillesztett forrásból</b> gombra.</li>
+  </ol>
+  <p>Kézi módban a robots.txt, a sitemap és a HTTP fejlécek nem vizsgálhatók, és a <b class="ui">Mély SEO vizsgálat</b> sem érhető el; ezt az eredmény <span class="chip">kézi mód</span> címkéje jelzi.</p>
+</section>
+
+<section class="card" id="ai-kulcs">
+  <h2><span class="num">3</span> AI kulcs beállítása (ingyenes Gemini) <a class="top" href="#top">↑ fel</a></h2>
+  <p>Az alap audit, a <b>Mély SEO vizsgálat</b>, a <b>GTM konténer-elemzés</b>, a <b>mérési specifikáció</b> és az <b>UTM eszköz</b> kulcs nélkül is működik.
+  A <b>Részletes audit</b> és az <b>Online marketing elemzés</b> gombjai viszont csak AI kulccsal aktívak.</p>
+
+  <h3>A. Kulcs igénylése</h3>
+  <ol>
+    <li>Nyisd meg: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (a sáv <b class="ui">Ingyenes Gemini kulcs ↗</b> gombja is ide visz).</li>
+    <li>Jelentkezz be a Google-fiókoddal, és hozz létre egy új API kulcsot (<i>Create API key</i>).</li>
+    <li>Másold ki a kulcsot. Jellemzően <code>AIza…</code> kezdetű.</li>
+  </ol>
+
+  <h3>B. Kulcs megadása az appban</h3>
+  <ol>
+    <li>Kattints a <b class="ui">Beállítások</b> gombra (vagy a sáv <b class="ui">Kulcs megadása</b> gombjára). Az <b class="ui">AI szolgáltató</b> fül nyílik meg.</li>
+    <li>Az <b class="ui">AI szolgáltató</b> listában válaszd a <b class="ui">Google Gemini</b> lehetőséget. A modell mező ekkor kitöltődik az alapértelmezett modellel (<code>gemini-2.5-pro</code>).</li>
+    <li>Illeszd be a kulcsot az <b class="ui">API kulcs</b> mezőbe.</li>
+    <li><i>(Opcionális)</i> A <b class="ui">Modell</b> sorban a <b class="ui">Lista</b> gombbal lekérheted az elérhető modelleket, és választhatsz közülük; vagy beírhatod a modell azonosítóját kézzel.</li>
+    <li><i>(Opcionális)</i> Hagyd bekapcsolva a <b class="ui">Webes keresés engedélyezése</b> jelölőt – ez kell a megbízhatóbb konkurenselemzéshez.</li>
+    <li>Kattints a <b class="ui">Kapcsolat teszt</b> gombra. Ha minden rendben, ezt látod: <span class="chip ok">✓ A kapcsolat működik.</span></li>
+    <li>Kattints a <b class="ui">Mentés</b> gombra.</li>
+  </ol>
+  <div class="note">
+    <p>A többi szolgáltató is választható: <b class="ui">Claude (Anthropic)</b>, <b class="ui">OpenAI</b>, <b class="ui">OpenRouter (sok modell, egy kulcs)</b> és <b class="ui">Egyéb OpenAI-kompatibilis végpont</b>.
+    Az <b class="ui">API kulcs</b> mező alatt mindig ott a link, ahol az adott szolgáltatónál kulcsot igényelhetsz.</p>
+  </div>
+  <div class="note ok">
+    <p><b>A kulcs csak ebben a böngészőben tárolódik</b>, és közvetlenül a választott szolgáltatóhoz megy – nincs köztes szerver. Közös gépen ne mentsd el.</p>
+  </div>
+
+  <h3>C. Kulcs eltávolítása</h3>
+  <ol>
+    <li><b class="ui">Beállítások</b> → <b class="ui">AI szolgáltató</b> fül.</li>
+    <li>Töröld ki a teljes tartalmát az <b class="ui">API kulcs</b> mezőnek.</li>
+    <li>Kattints a <b class="ui">Mentés</b> gombra. Az AI gombok ezután újra inaktívak.</li>
+  </ol>
+  <p>Ha a kulcsot már nem használod, a szolgáltató oldalán (Geminihez: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>) is törölheted.</p>
+</section>
+
+<section class="card" id="eredmeny">
+  <h2>Az eredmény részei <a class="top" href="#top">↑ fel</a></h2>
+  <p>Az eredmény felett az <b class="ui">Ugrás:</b> sáv a szekciókhoz visz; a számok a tételek darabszámát, a <b>✓</b> a már elkészült részt jelzi. Csak az a szekció látszik, amelyhez van tartalom.</p>
+
+  <h3>Fejléc és pontszámok</h3>
+  <ul>
+    <li>A fejléc a vizsgált címet, a HTTP állapotot, a válaszidőt és a felismert platformot mutatja. A <span class="chip warning">proxy: …</span> címke azt jelzi, hogy az oldal nyilvános proxyn keresztül jött.</li>
+    <li>Pontszámok 0–100 között: <b class="ui">Összesített</b> (osztályzattal), <b class="ui">Mérés &amp; hirdetés</b>, <b class="ui">SEO &amp; technikai</b>, <b class="ui">Konverzió</b>, valamint a megállapítások száma súlyosság szerint.</li>
+  </ul>
+
+  <h3>Platform-korlátok</h3>
+  <p>Ha az app felismeri, hogy az oldal olyan rendszeren fut, amely bizonyos beállításokat nem enged, ezt külön kártyán jelzi. Az ilyen javaslatok nem hibák, és nem számítanak a pontszámba.</p>
+
+  <h3>Mérési beállítások</h3>
+  <p>A <b class="ui">Detektált mérési beállítások</b> táblázat a forráskódból felismert elemeket sorolja fel: Google Analytics 4, Google Tag Manager (és ha beolvasható, a konténer tartalma), Google Ads, Universal Analytics, Meta Pixel és események, Consent Mode, Cookie consent (CMP), Server-side GTM, dataLayer, GA4 e-commerce és konverziós események, egyéb eszközök.</p>
+
+  <h3>Megállapítások</h3>
+  <ul>
+    <li>Egy sorra kattintva lenyílik a részletes leírás, a bizonyíték és a várható hatás.</li>
+    <li>A fejléc gombjaival szűrhetsz súlyosság szerint: <span class="chip critical">Kritikus</span> <span class="chip warning">Figyelmeztetés</span> <span class="chip opportunity">Lehetőség</span> <span class="chip ok">Rendben</span>.</li>
+  </ul>
+
+  <h3>Mély SEO vizsgálat</h3>
+  <p>A <b class="ui">Mély vizsgálat indítása</b> gomb a sitemapből mintát vesz, és több oldalt bejárva keres olyan hibákat, amelyek egy oldalból nem látszanak: duplikált címek és leírások, hiányzó H1, vékony tartalom, canonical eltérés, törött belső linkek, www/nem-www duplikáció, soft-404. Kulcs nem kell hozzá, de percekig is tarthat; bármikor leállítható, a részeredmény megmarad. A bejárt oldalak és linkek számát a <b class="ui">Beállítások</b> → <b class="ui">Vizsgálat</b> fülön állíthatod.</p>
+
+  <h3>GTM konténer-elemzés</h3>
+  <p>Kívülről csak az látszik, hogy a GTM betöltődik; a tartalmát a konténer exportjából elemzi az app.</p>
+  <ol>
+    <li>Google Tag Manager → <b>Admin</b> → <b>Konténer exportálása</b>.</li>
+    <li>Válaszd ki a verziót (jellemzően a legutóbb publikáltat) → <b>Exportálás</b>.</li>
+    <li>A letöltött <code>.json</code> fájlt töltsd fel a <b class="ui">GTM konténer-elemzés</b> kártyán.</li>
+  </ol>
+  <p>A fájl nem töltődik fel sehova, a böngésződ dolgozza fel. Később a <b class="ui">Másik konténer</b> gombbal cserélheted, a <b class="ui">Törlés</b> gombbal eltávolíthatod.</p>
+</section>
+
+<section class="card" id="ai-elemzesek">
+  <h2>Részletes audit és marketing elemzés <a class="top" href="#top">↑ fel</a></h2>
+  <p>Mindkettőhöz AI kulcs kell (<a href="#ai-kulcs">beállítás</a>). Kulcs nélkül a <b class="ui">Részletes audit készítése</b> és a <b class="ui">Marketing elemzés készítése</b> gomb inaktív.</p>
+  <h3>Részletes audit</h3>
+  <ul>
+    <li>Gomb: <b class="ui">Részletes audit készítése</b>.</li>
+    <li>Az alap auditot értelmezi és kiegészíti: vezetői összefoglaló, mérési érettség, <b class="ui">Javasolt mérési terv</b> eseményszinten, <b class="ui">Ütemterv</b> és <b class="ui">További megállapítások</b>.</li>
+    <li>Az ütemterv fázisainál a <b class="ui">↗ Things</b> gomb az adott fázis feladatait küldi a Things 3-ba.</li>
+  </ul>
+  <h3>Online marketing elemzés</h3>
+  <ul>
+    <li>Gomb: <b class="ui">Marketing elemzés készítése</b>. Előtte a <b class="ui">További kontextus (opcionális)</b> mezőben megadhatsz pontosító információt (pl. B2B, csak a magyar piac számít).</li>
+    <li>Részei: <b class="ui">1 Optimalizációs lehetőségek</b> (csatornák, tartalmak, tartalomtípusok), <b class="ui">2 TOP5 konkurens és összehasonlítás</b>, a javasolt teendők pedig a <b class="ui">Feladatok</b> kártyára kerülnek.</li>
+    <li>A konkurenskutatás a webes keresésre támaszkodik; ha a keresés ki van kapcsolva, a konkurensek megbízhatatlanok lehetnek – ezt az app is jelzi.</li>
+  </ul>
+  <p>A futás percekig is tarthat (a marketing elemzés jellemzően 1–3 percig), közben a <b class="ui">Leállítás</b> gombbal megszakítható. Kész elemzésnél az <b class="ui">Újragenerálás</b> gomb készít újat.</p>
+</section>
+
+<section class="card" id="feladatok">
+  <h2>Feladatok és Things 3 <a class="top" href="#top">↑ fel</a></h2>
+  <p>A <b class="ui">Feladatok</b> kártya egy listában gyűjti a teendőket az alap auditból, a részletes auditból és a marketing elemzésből, P1–P3 prioritás szerint rendezve. A <b class="ui">Részletek</b> alatt a leírás és az alfeladatok olvashatók.</p>
+  <ul>
+    <li>Kijelölés: <b class="ui">Mind kijelöl</b>, <b class="ui">Kijelölés törlése</b>, <b class="ui">Csak P1</b>, vagy egyenként a jelölőnégyzettel.</li>
+    <li><b class="ui">↗ Kijelöltek a Things 3-ba</b>: a kijelölt feladatok új Things projektként kerülnek át.</li>
+    <li><b class="ui">↗ Things</b> egy feladat mellett: csak azt az egyet küldi a Things Inboxába.</li>
+  </ul>
+  <div class="note">
+    <p>A Things 3 küldéshez a Things 3 alkalmazásnak telepítve kell lennie azon az eszközön, ahol a böngésző fut. Ha nem használod, a feladatokat CSV-ben is kiexportálhatod (<a href="#export">Exportok</a>).</p>
+  </div>
+</section>
+
+<section class="card" id="spec-es-utm">
+  <h2>Eszközök: mérési specifikáció és UTM <a class="top" href="#top">↑ fel</a></h2>
+  <h3>Mérési specifikáció</h3>
+  <p>Fejlesztőnek átadható dokumentum arról, milyen <code>dataLayer</code> eseményeket kell küldeni, milyen paraméterekkel és mikor – az oldal típusához igazítva.</p>
+  <ul>
+    <li><b class="ui">Megnézem</b> – megjeleníti az oldalon (hány esemény van meg és hány hiányzik).</li>
+    <li><b class="ui">Letöltés (.md)</b> – Markdown fájlként menti.</li>
+    <li><b class="ui">Things 3-ba</b> – a hiányzó események bevezetését feladatként küldi át.</li>
+  </ul>
+  <h3>UTM építő és ellenőrző</h3>
+  <p>A <b class="ui">Megnyitom</b> gomb három fület nyit:</p>
+  <ul>
+    <li><b class="ui">Építő</b> – a <code>utm_source</code>, <code>utm_medium</code>, <code>utm_campaign</code> (és opcionálisan <code>utm_content</code>, <code>utm_term</code>) mezőkből összerakja a kampány URL-t.</li>
+    <li><b class="ui">Ellenőrző</b> – soronként egy meglévő kampány URL-t ellenőriz (kis-nagybetű, szóköz, ékezet, hiányzó mező, self-referral).</li>
+    <li><b class="ui">Konvenció</b> – javasolt UTM elnevezési szabályok, <b class="ui">Letöltés (.md)</b> gombbal.</li>
+  </ul>
+</section>
+
+<section class="card" id="elozmenyek">
+  <h2>Előzmények és ügyfelek <a class="top" href="#top">↑ fel</a></h2>
+  <h3>Előzmények</h3>
+  <ul>
+    <li>Az <b class="ui">Előzmények</b> fülön a korábbi elemzések listája látható pontszámmal, dátummal és címkékkel (pl. <span class="chip">mély</span>, <span class="chip">részletes</span>, <span class="chip">marketing</span>).</li>
+    <li>Egy sorra kattintva az elemzés újra megnyílik; a <b class="ui">✕</b> gomb törli.</li>
+    <li>A böngésző legfeljebb 25 elemzést őriz meg; ha betelik a tárhely, a legrégebbiek törlődnek. Amit meg akarsz tartani, exportáld.</li>
+  </ul>
+  <h3>Ügyfelek</h3>
+  <ul>
+    <li>Az <b class="ui">Elemzés</b> fülön az <b class="ui">Ügyfél:</b> sávban a <b class="ui">+ Új ügyfél</b> gombbal vehetsz fel ügyfelet (név és opcionálisan Things 3 Area), a listából pedig kiválaszthatod az aktuálisat.</li>
+    <li>Az elemzés a kiválasztott ügyfélhez készül: a neve megjelenik az eredmény fejlécében és a riportokban.</li>
+    <li>Az ügyfeleket a <b class="ui">Beállítások</b> → <b class="ui">Riport &amp; Things</b> fülön kezelheted (Things Area módosítása, törlés).</li>
+  </ul>
+</section>
+
+<section class="card" id="export">
+  <h2>Exportok <a class="top" href="#top">↑ fel</a></h2>
+  <h3>Egy elemzés exportja (az eredmény alján, <b class="ui">Export</b> kártya)</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Gomb</th><th>Eredmény</th></tr></thead>
+    <tbody>
+      <tr><td class="ui">PDF (nyomtatási nézet)</td><td>Nyomtatási nézetet nyit, és elindítja a nyomtatást. PDF-hez válaszd a „Mentés PDF-ként” célt (<kbd>Cmd/Ctrl</kbd> + <kbd>P</kbd>). A nézetből a <b class="ui">Nyomtatás / PDF</b> és a <b class="ui">Bezárás</b> gombbal lépsz tovább.</td></tr>
+      <tr><td class="ui">Markdown</td><td>A teljes riport <code>.md</code> fájlban.</td></tr>
+      <tr><td class="ui">Feladatok CSV</td><td>A feladatlista táblázatként (Excelben megnyitható).</td></tr>
+      <tr><td class="ui">Megállapítások CSV</td><td>A megállapítások táblázatként.</td></tr>
+      <tr><td class="ui">Things JSON</td><td>A feladatok Things projektként, JSON fájlban.</td></tr>
+      <tr><td class="ui">Teljes JSON</td><td>Az elemzés összes adata.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Az összes elemzés exportja</h3>
+  <p>Az <b class="ui">Előzmények</b> fülön, az <b class="ui">Összes exportálása:</b> sorban: <b class="ui">Összefoglaló CSV</b>, <b class="ui">Feladatok CSV</b>, <b class="ui">Megállapítások CSV</b>, <b class="ui">Markdown</b>, <b class="ui">JSON</b>.</p>
+  <h3>Saját arculat a riporton</h3>
+  <p>A <b class="ui">Beállítások</b> → <b class="ui">Riport &amp; Things</b> fülön megadhatod a <b class="ui">Készítő (ügynökség / saját név)</b> nevet és egy <b class="ui">Logó a riportra</b> képet (max. 300 KB). Ezek a PDF és a Markdown riport fejlécében jelennek meg; a logót a böngésző menti el, nem töltődik fel sehova.</p>
+</section>
+
+<section class="card" id="beallitasok">
+  <h2>Beállítások áttekintése <a class="top" href="#top">↑ fel</a></h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Fül</th><th>Mit állíthatsz</th></tr></thead>
+    <tbody>
+      <tr><td class="ui">AI szolgáltató</td><td>Szolgáltató, API kulcs, modell (<b class="ui">Lista</b>), webes keresés, <b class="ui">Kapcsolat teszt</b>.</td></tr>
+      <tr><td class="ui">Letöltés</td><td><b class="ui">Saját proxy (ajánlott)</b> megadása, útmutató saját ingyenes proxy készítéséhez, <b class="ui">Proxy teszt futtatása</b>.</td></tr>
+      <tr><td class="ui">Vizsgálat</td><td>A mély vizsgálat által bejárt oldalak és ellenőrzött belső linkek száma.</td></tr>
+      <tr><td class="ui">Riport &amp; Things</td><td>Készítő neve, ügyfelek, logó, <b class="ui">Things 3 – alapértelmezett célterület (Area)</b>.</td></tr>
+    </tbody>
+  </table></div>
+  <p>A módosítások a <b class="ui">Mentés</b> gombbal lépnek életbe. A felső menü <b class="ui">◐</b> gombja világos és sötét téma között vált; alapból a rendszer beállítását követi.</p>
+</section>
+
+<section class="card" id="adatkezeles">
+  <h2>Adatkezelés és biztonság <a class="top" href="#top">↑ fel</a></h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Adat</th><th>Hol van / hová megy</th></tr></thead>
+    <tbody>
+      <tr><td>Beállítások, AI kulcs, ügyfelek, logó</td><td>A böngésző helyi tárolójában (<code>localStorage</code>), ezen az eszközön és ebben a böngészőben.</td></tr>
+      <tr><td>Elemzések (Előzmények)</td><td>Szintén a böngésző helyi tárolójában, legfeljebb 25 darab.</td></tr>
+      <tr><td>A vizsgált oldal letöltése</td><td>Először közvetlenül a vizsgált oldalról; ha az nem engedi, <b>nyilvános CORS proxy szolgáltatásokon</b> keresztül (pl. allorigins, codetabs, cors.isomorphic-git), vagy a saját proxyn, ha megadtál ilyet. Ilyenkor a vizsgált cím és az oldal tartalma áthalad az adott proxyn. Ugyanígy tölti le az app a robots.txt-t, a sitemapet, a GTM konténert és néhány külső szkriptet.</td></tr>
+      <tr><td>AI elemzés</td><td>Közvetlenül a választott szolgáltatóhoz megy (pl. Google Gemini), a te kulcsoddal. Az elemzés összesített adatai kerülnek elküldésre, köztes szerver nélkül.</td></tr>
+      <tr><td>GTM export, beillesztett forráskód</td><td>A böngésződben dolgozza fel az app, nem töltődik fel.</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li>Közös vagy idegen gépen ne ments el AI kulcsot; használat után töröld (<a href="#ai-kulcs">C. Kulcs eltávolítása</a>).</li>
+    <li>Ha egy kulcs nyilvánosságra került (pl. képernyőképen vagy e-mailben), töröld a szolgáltató oldalán, és igényelj újat.</li>
+    <li>Érzékeny vagy nem nyilvános oldalt inkább <a href="#kezi-mod">kézi módban</a> vagy saját proxyval elemezz, hogy ne haladjon át nyilvános proxyn.</li>
+    <li>Az elmentett elemzések (<b class="ui">Előzmények</b>), a beállítások és az AI kulcs csak a látogató saját böngészőjében tárolódnak, ezért az oldal más látogatói nem látják őket.</li>
+    <li>A böngészőadatok törlése (cookie-k és webhelyadatok) az elemzéseket és a beállításokat is törli.</li>
+  </ul>
+</section>
+
+<section class="card" id="gyik">
+  <h2>Gyakori kérdések és hibák <a class="top" href="#top">↑ fel</a></h2>
+  <details open>
+    <summary>„Nem sikerült elemezni.” – nem töltődik le az oldal</summary>
+    <p>A nyilvános proxyk időnként leállnak vagy korlátoznak. Lehetőségek:</p>
+    <ol>
+      <li><b class="ui">⌨ Váltás kézi módra</b> – illeszd be az oldal forráskódját (<a href="#kezi-mod">Kézi mód</a>). Ez mindig működik.</li>
+      <li><b class="ui">Proxy beállítások</b> → <b class="ui">Proxy teszt futtatása</b>: megmutatja, melyik letöltési mód él most.</li>
+      <li>Adj meg saját proxyt a <b class="ui">Beállítások</b> → <b class="ui">Letöltés</b> fülön (a fülön lépésenkénti leírás is van).</li>
+    </ol>
+  </details>
+  <details>
+    <summary>Szürke (inaktív) a Részletes audit vagy a Marketing elemzés gombja</summary>
+    <p>Nincs beállítva AI kulcs vagy modell. (Az egérmutatót a gomb fölé víve ezt látod: „Nincs API kulcs”.) Állítsd be a <a href="#ai-kulcs">3. pont</a> szerint, majd kattints a <b class="ui">Mentés</b> gombra.</p>
+  </details>
+  <details>
+    <summary>Hibát ad az AI elemzés</summary>
+    <ul>
+      <li>Nyisd meg a <b class="ui">Beállítások</b> ablakot, és futtass <b class="ui">Kapcsolat teszt</b>et – a hibaüzenet megmutatja az okot.</li>
+      <li>Ellenőrizd, hogy a kulcs a kiválasztott szolgáltatóhoz tartozik-e, és hibátlanul (szóköz nélkül) van-e bemásolva.</li>
+      <li>Ellenőrizd a modellt: a <b class="ui">Lista</b> gombbal válassz olyat, amelyet a kulcsod elér.</li>
+      <li>Ha a hiba keretre vagy kvótára utal (az ingyenes kulcsnak korlátai vannak), várj egy kicsit, vagy válassz a listából egy könnyebb modellt.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Nem történik semmi a Things gombokra</summary>
+    <p>A küldéshez a Things 3 alkalmazásnak telepítve kell lennie azon az eszközön, ahol a böngésző fut. Nélküle használd a <b class="ui">Feladatok CSV</b> exportot.</p>
+  </details>
+  <details>
+    <summary>Nem jelenik meg a PDF</summary>
+    <p>A <b class="ui">PDF (nyomtatási nézet)</b> a böngésző nyomtatási ablakát nyitja meg. Ott a célnál válaszd a „Mentés PDF-ként” lehetőséget. Ha az ablak nem jött fel, a nyomtatási nézetben kattints a <b class="ui">Nyomtatás / PDF</b> gombra.</p>
+  </details>
+  <details>
+    <summary>Eltűntek a beállításaim vagy az elemzéseim</summary>
+    <p>Az adatok böngészőnként és címenként külön tárolódnak: más böngészőben vagy privát ablakban nem látszanak. A böngészőadatok törlése is eltávolítja őket. Fontos elemzést exportálj.</p>
+  </details>
+  <details>
+    <summary>Miért nem futtatható a Mély SEO vizsgálat?</summary>
+    <p>Kézi módban (és így a demóban) nem érhető el, mert több oldal letöltését igényli. URL-ből indított elemzésnél elérhető.</p>
+  </details>
+  <details>
+    <summary>Visszajött a demó elemzés, pedig töröltem</summary>
+    <p>Az online változat minden megnyitáskor visszateszi a mintaelemzést az <b class="ui">Előzmények</b> közé. A saját elemzéseidet nem érinti.</p>
+  </details>
+</section>
+</main>
+
+<footer class="foot">
+  <span>GA4 Insights – kezelési útmutató</span>
+  <span class="spacer"></span>
+  <a class="btn secondary" href="#top">↑ Az oldal tetejére</a>
+  <a class="btn" href="index.html">← Vissza az apphoz</a>
+</footer>
+
+</div>
+<script>
+/* Nyomtatáskor minden lenyíló válasz látsszon */
+window.addEventListener('beforeprint', function () {
+  document.querySelectorAll('details').forEach(function (d) { d.open = true; });
+});
+
+/* Ha az útmutató az appba ágyazva (keretben) nyílik meg:
+   – a belső (#) linkek az útmutatón belül görgetnek (különben a keret a szülő lap címére navigálna),
+   – a „Vissza az apphoz” bezárja a nézetet, az Esc szintén,
+   – a külső linkek új lapon nyílnak.
+   Önálló oldalként a „Vissza az apphoz” marad sima link (index.html). */
+(function () {
+  var framed = false;
+  try { framed = window.parent !== window; } catch (e) { framed = true; }
+  function closeGuide() {
+    try { window.parent.postMessage({ type: 'ga4demo-close-guide' }, '*'); } catch (e) {}
+  }
+  document.querySelectorAll('a[href^="http://"], a[href^="https://"]').forEach(function (a) {
+    a.target = '_blank';
+    a.rel = 'noopener';
+  });
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    if (href.charAt(0) === '#') {
+      var id = decodeURIComponent(href.slice(1));
+      var el = id ? document.getElementById(id) : null;
+      if (el || !id) {
+        e.preventDefault();
+        if (el && id !== 'top') el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        else window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (!framed) { try { history.replaceState(null, '', href); } catch (err) {} }
+      }
+    } else if (href === 'index.html' && framed) {
+      e.preventDefault();
+      closeGuide();
+    }
+  });
+  if (framed) {
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' || e.key === 'Esc') closeGuide();
+    });
+  }
+})();
+</script>
+</body>
+</html>
