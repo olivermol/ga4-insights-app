@@ -1,7 +1,7 @@
 <!doctype html><html lang="hu"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GA4 Insights – Kezelési útmutató</title>
-<meta name="description" content="A GA4 Insights mérési és marketing audit eszköz kezelési útmutatója: demó, saját elemzés, AI kulcs, eredmények, exportok, adatkezelés.">
+<meta name="description" content="A GA4 Insights mérési és marketing audit eszköz kezelési útmutatója: demó, saját elemzés, AI kulcs, eredmények, exportok, adatkezelés." data-letoltott-content="A GA4 Insights mérési és marketing audit eszköz kezelési útmutatója: saját elemzés, AI kulcs, eredmények, exportok, adatkezelés.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📊</text></svg>">
 <style>
 :root {
@@ -112,6 +112,7 @@ details[open] summary { margin-bottom: 6px; }
 details > :last-child { margin-bottom: 0; }
 .top { font-size: 13px; text-decoration: none; margin-left: auto; font-weight: 450; color: var(--text-faint); }
 footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 26px; display: flex; gap: 10px 16px; flex-wrap: wrap; align-items: center; }
+[hidden] { display: none !important; }
 @media (max-width: 640px) {
   body { font-size: 15px; }
   .wrap { padding: 0 16px 60px; }
@@ -157,7 +158,11 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
   <p><b>Az adataid a böngésződben maradnak.</b> Nincs regisztráció és nincs saját szerver: az elemzések, a beállítások és az AI kulcs
   csak ebben a böngészőben tárolódnak. Részletek: <a href="#adatkezeles">Adatkezelés és biztonság</a>.</p>
 </div>
-<div class="note warn">
+<div class="note" data-csak-letoltott hidden>
+  <p><b>Letöltött változat.</b> Az app üresen indul, vagy – ha a letöltéskor már voltak – a saját elemzéseiddel és beállításaiddal (az AI kulcsot újra meg kell adnod).
+  Az <span class="ui">index.html</span> és ez az útmutató maradjon ugyanabban a mappában.</p>
+</div>
+<div class="note warn" data-csak-online>
   <p><span class="pill">DEMÓ</span> Az online változat megnyitáskor egy <b>kitalált adatokon</b> alapuló mintaelemzést tölt be
   (<code>pelda-webshop.hu</code>). Az abban látható AI részek előre elkészített minták, nem valódi AI-futás eredményei.</p>
 </div>
@@ -166,7 +171,7 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
   <div class="label">Tartalom</div>
   <ul>
     <li><a href="#gyors-kezdes">Gyors kezdés 3 lépésben</a></li>
-    <li><a href="#demo">1. Demó megnézése</a></li>
+    <li data-csak-online><a href="#demo">1. Demó megnézése</a></li>
     <li><a href="#sajat-elemzes">2. Saját elemzés indítása URL-ből</a></li>
     <li><a href="#kezi-mod">Kézi mód (forrás beillesztése)</a></li>
     <li><a href="#ai-kulcs">3. AI kulcs beállítása (ingyenes Gemini)</a></li>
@@ -185,13 +190,14 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
 <section class="card" id="gyors-kezdes">
   <h2>Gyors kezdés 3 lépésben <a class="top" href="#top">↑ fel</a></h2>
   <ol class="steps3">
-    <li><b>Nézd meg a demót</b> Az online változat magától megnyit egy kitalált mintaelemzést – így látod, mit kapsz.</li>
+    <li data-csak-letoltott hidden><b>Nyisd meg az appot</b> Kattints duplán az <span class="ui">index.html</span> fájlra – a böngésződben nyílik meg, telepíteni nem kell.</li>
+    <li data-csak-online><b>Nézd meg a demót</b> Az online változat magától megnyit egy kitalált mintaelemzést – így látod, mit kapsz.</li>
     <li><b>Elemezz egy saját oldalt</b> Írd be a címet a mezőbe, és nyomd meg az <span class="ui">Elemzés indítása</span> gombot. Ehhez nem kell kulcs.</li>
     <li><b>Kapcsold be az AI-t</b> <span class="ui">Beállítások</span> → add meg a saját (akár ingyenes Gemini) kulcsodat → <span class="ui">Mentés</span>.</li>
   </ol>
 </section>
 
-<section class="card" id="demo">
+<section class="card" id="demo" data-csak-online>
   <h2><span class="num">1</span> Demó megnézése <a class="top" href="#top">↑ fel</a></h2>
   <p>Az online változat tetején egy sárga <span class="pill">DEMÓ</span> sáv látható. Ha még nincs saját elemzésed, az app megnyitja a mintaelemzést.</p>
   <ul>
@@ -203,6 +209,7 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
   <div class="tablewrap"><table>
     <thead><tr><th>Gomb</th><th>Mit csinál</th></tr></thead>
     <tbody>
+      <tr><td class="ui">Letöltés</td><td>Letölti az appot egy <code>ga4-insights-app.zip</code> csomagban: az üres eszköz a saját mentett elemzéseiddel és beállításaiddal (az AI kulcs és a mintaelemzés nélkül), valamint ez az útmutató. Kicsomagolás után az <span class="ui">index.html</span> megnyitásával indul.</td></tr>
       <tr><td class="ui">Útmutató</td><td>Megnyitja ezt az útmutatót az appon belül, teljes képernyős nézetben. A <b class="ui">✕ Bezárás</b> gombbal, az <kbd>Esc</kbd> billentyűvel vagy a <b class="ui">← Vissza az apphoz</b> gombbal zárható.</td></tr>
       <tr><td class="ui">Ingyenes Gemini kulcs ↗</td><td>Új lapon megnyitja a Google AI Studio kulcsoldalát (lásd: <a href="#ai-kulcs">AI kulcs beállítása</a>).</td></tr>
       <tr><td class="ui">Kulcs megadása</td><td>Megnyitja a <b class="ui">Beállítások</b> ablakot, ahol a kulcsot megadhatod.</td></tr>
@@ -247,14 +254,14 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
 
   <h3>A. Kulcs igénylése</h3>
   <ol>
-    <li>Nyisd meg: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (a sáv <b class="ui">Ingyenes Gemini kulcs ↗</b> gombja is ide visz).</li>
+    <li>Nyisd meg: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a><span data-csak-online> (a sáv <b class="ui">Ingyenes Gemini kulcs ↗</b> gombja is ide visz)</span>.</li>
     <li>Jelentkezz be a Google-fiókoddal, és hozz létre egy új API kulcsot (<i>Create API key</i>).</li>
     <li>Másold ki a kulcsot. Jellemzően <code>AIza…</code> kezdetű.</li>
   </ol>
 
   <h3>B. Kulcs megadása az appban</h3>
   <ol>
-    <li>Kattints a <b class="ui">Beállítások</b> gombra (vagy a sáv <b class="ui">Kulcs megadása</b> gombjára). Az <b class="ui">AI szolgáltató</b> fül nyílik meg.</li>
+    <li>Kattints a <b class="ui">Beállítások</b> gombra<span data-csak-letoltott hidden> a felső menüben</span><span data-csak-online> (vagy a sáv <b class="ui">Kulcs megadása</b> gombjára)</span>. Az <b class="ui">AI szolgáltató</b> fül nyílik meg.</li>
     <li>Az <b class="ui">AI szolgáltató</b> listában válaszd a <b class="ui">Google Gemini</b> lehetőséget. A modell mező ekkor kitöltődik az alapértelmezett modellel (<code>gemini-2.5-pro</code>).</li>
     <li>Illeszd be a kulcsot az <b class="ui">API kulcs</b> mezőbe.</li>
     <li><i>(Opcionális)</i> A <b class="ui">Modell</b> sorban a <b class="ui">Lista</b> gombbal lekérheted az elérhető modelleket, és választhatsz közülük; vagy beírhatod a modell azonosítóját kézzel.</li>
@@ -410,7 +417,7 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
       <tr><td class="ui">Riport &amp; Things</td><td>Készítő neve, ügyfelek, logó, <b class="ui">Things 3 – alapértelmezett célterület (Area)</b>.</td></tr>
     </tbody>
   </table></div>
-  <p>A módosítások a <b class="ui">Mentés</b> gombbal lépnek életbe. A felső menü <b class="ui">◐</b> gombja világos és sötét téma között vált; alapból a rendszer beállítását követi.</p>
+  <p>A módosítások a <b class="ui">Mentés</b> gombbal lépnek életbe. A felső menü <b class="ui">◐</b> gombja világos és sötét téma között vált; alapból a rendszer beállítását követi.<span data-csak-letoltott hidden> Az <b class="ui">Útmutató</b> gomb ezt az útmutatót nyitja meg az appon belül; a <b class="ui">✕ Bezárás</b> gombbal, az <kbd>Esc</kbd> billentyűvel vagy a <b class="ui">← Vissza az apphoz</b> gombbal zárható.</span></p>
 </section>
 
 <section class="card" id="adatkezeles">
@@ -472,9 +479,13 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
   </details>
   <details>
     <summary>Miért nem futtatható a Mély SEO vizsgálat?</summary>
-    <p>Kézi módban (és így a demóban) nem érhető el, mert több oldal letöltését igényli. URL-ből indított elemzésnél elérhető.</p>
+    <p>Kézi módban<span data-csak-online> (és így a demóban)</span> nem érhető el, mert több oldal letöltését igényli. URL-ből indított elemzésnél elérhető.</p>
   </details>
-  <details>
+  <details data-csak-online>
+    <summary>Mit tartalmaz a letöltött csomag?</summary>
+    <p>A sáv <b class="ui">Letöltés</b> gombja egy <code>ga4-insights-app.zip</code> fájlt ment: benne az üres eszköz (<code>index.html</code>) és ez az útmutató. Ha ebben a böngészőben már vannak saját elemzéseid és beállításaid, azok is bekerülnek, és a letöltött app első megnyitásakor betöltődnek – az AI kulcs és a mintaelemzés nem kerül bele.</p>
+  </details>
+  <details data-csak-online>
     <summary>Visszajött a demó elemzés, pedig töröltem</summary>
     <p>Az online változat minden megnyitáskor visszateszi a mintaelemzést az <b class="ui">Előzmények</b> közé. A saját elemzéseidet nem érinti.</p>
   </details>
@@ -504,7 +515,7 @@ window.addEventListener('beforeprint', function () {
   var framed = false;
   try { framed = window.parent !== window; } catch (e) { framed = true; }
   function closeGuide() {
-    try { window.parent.postMessage({ type: 'ga4demo-close-guide' }, '*'); } catch (e) {}
+    try { window.parent.postMessage({ type: 'ga4-close-guide' }, '*'); } catch (e) {}
   }
   document.querySelectorAll('a[href^="http://"], a[href^="https://"]').forEach(function (a) {
     a.target = '_blank';
