@@ -6,3 +6,16 @@ Böngészőben futó, egyfájlos eszköz: egy weboldal címéből megnézi a GA4
 
 - **Élő változat:** https://olivermol.github.io/ga4-insights-app/
 - **Kezelési útmutató:** [kezelesi-utmutato-ghp.html](https://olivermol.github.io/ga4-insights-app/kezelesi-utmutato-ghp.html)
+
+## A mappa felépítése
+
+| Fájl | Mi ez |
+| --- | --- |
+| `index.html` | Maga az app: az eszköz változtatás nélküli másolata, a végén egyetlen sorral, ami a demó réteget betölti. |
+| `demo-ghp.js` | A demó réteg: a DEMÓ sáv, a bemutató elemzés, az Útmutató nézet, a „Kulcs megadása” és a „Letöltés” gomb. |
+| `kezelesi-utmutato-ghp.html` | A kezelési útmutató. Az Útmutató gomb ezt nyitja meg a lapon belül. |
+| `.nojekyll` | A GitHub Pages ettől adja ki a fájlokat feldolgozás nélkül. |
+
+## Letöltés gomb
+
+A DEMÓ sáv „Letöltés” gombja a látogató böngészőjében állít elő egy ZIP-et: benne az app a demó réteg nélkül (a fenti betöltő sor kimarad belőle), a látogató saját elemzéseivel és beállításaival – az AI kulcs és a bemutató elemzés nélkül –, valamint a kezelési útmutató letöltött változata.
