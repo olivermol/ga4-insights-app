@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GA4 Insights v5.6 – mérési és marketing audit</title>
+<title>GA4 Insights v5.7 – mérési és marketing audit</title>
 <meta name="description" content="Egyfájlos mérési (GA4/GTM/Meta) és online marketing audit eszköz, Things 3 exporttal.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📊</text></svg>">
 <style>
@@ -725,7 +725,7 @@ dialog footer { padding: 13px 18px; border-top: 1px solid var(--border); display
 <div class="app">
 
   <header class="masthead">
-    <div class="logo"><span class="dot"></span> GA4 Insights <span class="chip" id="appVersion" title="Alkalmazás verziója">v5.6</span></div>
+    <div class="logo"><span class="dot"></span> GA4 Insights <span class="chip" id="appVersion" title="Alkalmazás verziója">v5.7</span></div>
     <div class="spacer"></div>
     <nav>
       <button class="ghost-btn active" data-view="analyze">Elemzés</button>
@@ -831,7 +831,7 @@ dialog footer { padding: 13px 18px; border-top: 1px solid var(--border); display
     const codes = [];
     s = s.replace(/`([^`]+)`/g, (_, c) => {
       codes.push(c);
-      return ` CODE${codes.length - 1} `;
+      return `\u0000CODE${codes.length - 1}\u0000`;
     });
 
     // [szöveg](url)
@@ -848,7 +848,7 @@ dialog footer { padding: 13px 18px; border-top: 1px solid var(--border); display
     s = s.replace(/(^|\s)_([^_\n]+)_(?=\s|$|[.,;:!?])/g, '$1<em>$2</em>');
     s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>');
 
-    s = s.replace(/ CODE(\d+) /g, (_, i) => `<code>${codes[Number(i)]}</code>`);
+    s = s.replace(/\u0000CODE(\d+)\u0000/g, (_, i) => `<code>${codes[Number(i)]}</code>`);
     return s;
   }
 
@@ -3358,7 +3358,7 @@ const { conversionRules } = __RulesConv;
 
 
 /** Az alkalmazás verziója – a riport fejlécében és az exportban is megjelenik. */
-const APP_VERSION = 'v5.6';
+const APP_VERSION = 'v5.7';
 
 /**
  * A Consent Mode állapota egy mondatban – a felület, a Markdown export és az
@@ -4929,9 +4929,7 @@ const ruleHelpers = { finding, task };
  * A macOS ennél jóval hosszabbat is átad, de a Things-nél hosszú
  * payloadnál előfordul csendes eldobás – ezért tartunk tartalékot.
  */
-const MAX_URL_LENGTH = Number(
-  (typeof process !== 'undefined' && process.env?.THINGS_MAX_URL) || 40000
-);
+const MAX_URL_LENGTH = 40000;
 /** A Things jegyzetmezőjének gyakorlati korlátja. */
 const MAX_NOTES_LENGTH = 9500;
 
