@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GA4 Insights v5.8 – mérési és marketing audit</title>
+<title>GA4 Insights v5.10 – mérési és marketing audit</title>
 <meta name="description" content="Egyfájlos mérési (GA4/GTM/Meta) és online marketing audit eszköz, Things 3 exporttal.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📊</text></svg>">
 <style>
@@ -34,11 +34,6 @@
   --opportunity-bg: #eaf3f9;
   --ok: #2f7d4f;
   --ok-bg: #ebf6ef;
-
-  /* A folyamábra sávjainak fedettsége. Sötét témában magasabb, mert a halvány
-     kitöltés a sötét felületen kimosódik (a színek krómája ott alacsonyabb). */
-  --folyam-op: .55;
-  --folyam-op-google: .5;
 
   --radius: 10px;
   --radius-sm: 6px;
@@ -71,9 +66,6 @@ html:not([data-theme="light"]) body.auto-dark {
   --ok: #6bc490;
   --ok-bg: #16261d;
 
-  --folyam-op: .8;
-  --folyam-op-google: .75;
-
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
 }
 
@@ -98,8 +90,6 @@ html:not([data-theme="light"]) body.auto-dark {
     --opportunity-bg: #17262e;
     --ok: #6bc490;
     --ok-bg: #16261d;
-    --folyam-op: .8;
-    --folyam-op-google: .75;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
   }
 }
@@ -556,36 +546,77 @@ dialog footer { padding: 13px 18px; border-top: 1px solid var(--border); display
 .blocked-toggle .chevron { color: var(--text-faint); font-size: 11px; }
 #blockedList .finding, #unverifiableList .finding { background: var(--surface); }
 
-/* ---- „Hova megy az adat" folyamábra ---- */
-.folyam svg { display: block; overflow: visible; }
-.folyam-forras { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1; }
-.folyam-forras-cim { fill: var(--text); font-size: 13px; font-weight: 600; }
-.folyam-forras-meta { fill: var(--text-dim); font-size: 11.5px; font-family: var(--mono); }
-.folyam-sav { fill: var(--accent); opacity: var(--folyam-op); stroke: var(--surface); stroke-width: 1.25; }
-.folyam-sav.google { fill: var(--opportunity); opacity: var(--folyam-op-google); }
-.folyam-sav.kotetlen { fill: url(#folyamSav); opacity: 1; stroke: var(--warning); stroke-width: 1; }
-.folyam-sav-hatter { fill: var(--warning-bg); }
-.folyam-sav-vonal { stroke: var(--warning); stroke-width: 2.4; }
-.folyam-cimke { fill: var(--text); font-size: 12.8px; font-weight: 540; }
-.folyam-meta { fill: var(--text-dim); font-size: 11.5px; }
-.folyam-sor.szunetel .folyam-sav { fill: var(--text-faint); opacity: .3; stroke-dasharray: 3 3; }
-.folyam-sor.szunetel .folyam-cimke { fill: var(--text-dim); }
-.folyam-sor:hover .folyam-sav { opacity: .85; }
-.folyam-jelmagyarazat {
-  display: flex; flex-wrap: wrap; gap: 6px 18px;
-  font-size: 12.2px; color: var(--text-dim); margin-top: 6px;
+/* ---- „Hova megy az adat" – célrendszer-kártyák ---- */
+.cel-racs {
+  display: grid; gap: 12px; align-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
 }
-.folyam-jelmagyarazat .jel {
-  display: inline-block; width: 13px; height: 9px; border-radius: 2px;
-  margin-right: 6px; vertical-align: -1px;
+.cel-kartya {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); padding: 12px 13px 11px;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
 }
-.jel-google { background: var(--opportunity); opacity: var(--folyam-op-google); }
-.jel-kotott { background: var(--accent); opacity: var(--folyam-op); }
-.jel-kotetlen { background: var(--warning-bg); border: 1px solid var(--warning);
-  background-image: repeating-linear-gradient(45deg, var(--warning) 0 2px, transparent 2px 5px); }
-.jel-szunetel { background: var(--text-faint); opacity: .35; }
+.cel-kartya.szunetel { opacity: .6; }
+.cel-fej { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cel-jel {
+  flex: 0 0 auto; width: 34px; height: 34px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--sans); font-size: 12.5px; font-weight: 700;
+  line-height: 1; overflow: hidden;
+}
+/* Logós jelvény: világos alap, mert a márkalogók világos háttérre készültek –
+   sötét témában is, különben a fekete részeik eltűnnének. */
+.cel-jel.logos { background: #ffffff; border: 1px solid var(--border); }
+.cel-jel svg { width: 24px; height: 24px; display: block; }
+.cel-fej-szoveg { min-width: 0; }
+.cel-nev { font-size: 13.6px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.cel-az { font-size: 11.6px; margin-top: 1px; overflow-wrap: anywhere; }
+.cel-az code { font-family: var(--mono); font-size: 11.6px; color: var(--text-dim); }
+.cel-halvany { color: var(--text-faint); }
+.cel-szamok { font-size: 12.6px; color: var(--text-dim); }
+.cel-szamok b { color: var(--text); font-weight: 600; }
+.cel-jelzesek { display: flex; flex-wrap: wrap; gap: 4px; }
+.cel-esemenyek {
+  list-style: none; margin: 2px 0 0; padding: 0;
+  border-top: 1px solid var(--border); max-height: 340px; overflow: auto;
+}
+.cel-esemeny { border-bottom: 1px solid var(--border); padding: 6px 0 5px; }
+.cel-esemeny:last-child { border-bottom: 0; }
+.cel-esemeny > details > summary {
+  position: relative; padding-right: 15px; cursor: pointer; list-style: none;
+}
+.cel-esemeny > details > summary::-webkit-details-marker { display: none; }
+.cel-esemeny > details > summary::after {
+  content: '▸'; position: absolute; right: 0; top: 1px;
+  color: var(--text-faint); font-size: 10px;
+}
+.cel-esemeny > details[open] > summary::after { content: '▾'; }
+.cel-esemeny > details > summary:hover .cel-esemeny-nev { color: var(--accent); }
+.cel-esemeny-fej { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cel-esemeny-nev { font-family: var(--mono); font-size: 12.2px; color: var(--text); }
+.cel-db, .cel-param-db { font-size: 11px; color: var(--text-faint); }
+.cel-mikor {
+  display: block; font-size: 11.6px; color: var(--text-dim);
+  margin-top: 2px; overflow-wrap: anywhere;
+}
+.cel-param { width: 100%; border-collapse: collapse; margin: 7px 0 2px; table-layout: auto; }
+.cel-param th {
+  text-align: left; font-weight: 500; font-size: 11.4px; color: var(--text-dim);
+  padding: 2px 9px 2px 0; vertical-align: top;
+  /* `break-word`, NEM `anywhere`: különben a böngésző a paraméternevet is
+     szétvágja (`content_ty / pe`), mert az oszlop min-szélessége egy betű lesz. */
+  overflow-wrap: break-word; max-width: 46%;
+}
+.cel-param td { font-size: 11.4px; padding: 2px 0; vertical-align: top; overflow-wrap: anywhere; }
+.cel-param td code { font-family: var(--mono); font-size: 11.2px; color: var(--text); }
+.cel-ures { font-size: 12.2px; color: var(--text-dim); margin: 2px 0 0; }
+.cel-labjegyzet { font-size: 12.2px; color: var(--text-faint); margin: 10px 0 0; }
 @media print {
-  .folyam-sav { opacity: .75; }
+  /* Nyomtatásban nincs görgetés és nincs kattintás: minden látszódjon. */
+  .cel-racs { grid-template-columns: repeat(2, 1fr); }
+  .cel-esemenyek { max-height: none; overflow: visible; }
+  .cel-esemeny > details > summary::after { content: ''; }
+  .cel-esemeny > details:not([open]) > .cel-param { display: table; }
 }
 
 /* ------------------------------ Ütemterv --------------------------- */
@@ -725,7 +756,7 @@ dialog footer { padding: 13px 18px; border-top: 1px solid var(--border); display
 <div class="app">
 
   <header class="masthead">
-    <div class="logo"><span class="dot"></span> GA4 Insights <span class="chip" id="appVersion" title="Alkalmazás verziója">v5.8</span></div>
+    <div class="logo"><span class="dot"></span> GA4 Insights <span class="chip" id="appVersion" title="Alkalmazás verziója">v5.10</span></div>
     <div class="spacer"></div>
     <nav>
       <button class="ghost-btn active" data-view="analyze">Elemzés</button>
@@ -3358,7 +3389,7 @@ const { conversionRules } = __RulesConv;
 
 
 /** Az alkalmazás verziója – a riport fejlécében és az exportban is megjelenik. */
-const APP_VERSION = 'v5.8';
+const APP_VERSION = 'v5.10';
 
 /**
  * A Consent Mode állapota egy mondatban – a felület, a Markdown export és az
@@ -7616,6 +7647,337 @@ window.dataLayer.push({
 
 
 /* ==================================================================
+   7e-0. Célrendszerek: platformok, események, paraméterek
+
+   Ez a blokk a konténer-elemző ÉS a felület között áll: az elemző innen
+   veszi, hogy egy tag melyik platformhoz tartozik és mit küld, a felület
+   pedig azt, hogy a platform hogy néz ki.
+   ================================================================== */
+
+/**
+ * A célrendszerek megjelenítési adatai: név, monogram-jelvény, márkaszín.
+ *
+ * LOGÓK. A logók NEM itt vannak, hanem a lenti `PLATFORM_LOGOK` blokkban,
+ * amit gép ír: a `logok/` mappába tett SVG-kből a `logok/beepites.mjs`
+ * generálja. Aminek nincs logója, az monogram-jelvényt kap – az az app saját
+ * jelölése, azonos formával és tipográfiával minden platformnál.
+ *
+ * A jelvény díszítés, az információt a platform NEVE hordozza, ezért a
+ * jelvény `aria-hidden`, és szín kiesésekor sem vész el semmi. A `szin` a
+ * monogram-jelvény háttere; logós jelvénynél világos alap van helyette, mert
+ * a márkalogók világos háttérre készültek.
+ */
+const PLATFORMOK = {
+  ga4:        { nev: 'Google Analytics 4',            monogram: 'GA4', szin: '#E8710A' },
+  google_ads: { nev: 'Google Ads',                    monogram: 'Ads', szin: '#3367D6' },
+  floodlight: { nev: 'Campaign Manager (Floodlight)', monogram: 'CM',  szin: '#1A73E8' },
+  ua:         { nev: 'Universal Analytics (megszűnt)', monogram: 'UA', szin: '#70707A' },
+  meta:       { nev: 'Meta Pixel',                    monogram: 'Me',  szin: '#0866FF' },
+  tiktok:     { nev: 'TikTok Pixel',                  monogram: 'TT',  szin: '#1C1C1E' },
+  microsoft:  { nev: 'Microsoft Ads (UET)',           monogram: 'UET', szin: '#0078D4' },
+  linkedin:   { nev: 'LinkedIn Insight',              monogram: 'Li',  szin: '#0A66C2' },
+  pinterest:  { nev: 'Pinterest Tag',                 monogram: 'Pi',  szin: '#C8102E' },
+  snap:       { nev: 'Snap Pixel',                    monogram: 'Sn',  szin: '#F5D90A' },
+  x:          { nev: 'X (Twitter) Pixel',             monogram: 'TW',  szin: '#26292C' },
+  reddit:     { nev: 'Reddit Pixel',                  monogram: 'Rd',  szin: '#C93400' },
+  criteo:     { nev: 'Criteo / RTB House',            monogram: 'Rt',  szin: '#A8500F' },
+  hotjar:     { nev: 'Hotjar',                        monogram: 'Hj',  szin: '#B03310' },
+  clarity:    { nev: 'Microsoft Clarity',             monogram: 'Cy',  szin: '#3A5BC7' },
+  matomo:     { nev: 'Matomo',                        monogram: 'Mt',  szin: '#33509A' },
+  sfmc:       { nev: 'Salesforce Marketing Cloud',    monogram: 'SF',  szin: '#0F7CA8' },
+  maileon:    { nev: 'Maileon (e-mail)',              monogram: 'Ml',  szin: '#4F5A63' },
+  optimonk:   { nev: 'OptiMonk',                      monogram: 'OM',  szin: '#B8431C' },
+  intercom:   { nev: 'Intercom',                      monogram: 'Ic',  szin: '#1F6FB8' },
+  barion:     { nev: 'Barion Pixel',                  monogram: 'Ba',  szin: '#0B5ED7' },
+  arukereso:  { nev: 'Árukereső / Árgép',             monogram: 'Ár',  szin: '#A8001A' },
+  sablon:     { nev: 'Galéria-sablon',                monogram: '▦',   szin: '#5F6368' },
+  egyeb:      { nev: 'Egyéni HTML – nem azonosított', monogram: '{}',  szin: '#5F6368' },
+};
+
+/* ---- Beépített logók – KEZDET (a logok/beepites.mjs írja) ---- */
+/* Ezt a blokkot gép írja – kézzel ne szerkeszd, mert a következő futtatás
+   felülírja. Új logó: tedd az SVG-t a logok/ mappába, és futtasd a
+   logok/beepites.mjs-t. Ami nincs itt, az monogram-jelvényt kap. */
+const PLATFORM_LOGOK = {
+  ga4: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="31.1 -18.5 34.2 39" preserveAspectRatio="xMidYMid meet" focusable="false"><linearGradient gradientUnits="userSpaceOnUse" x1="173.867" y1="-72.65" x2="216.749" y2="-72.65"><stop offset="0" stop-color="#e96f0b"/><stop offset="1" stop-color="#f37901"/></linearGradient><g fill="#757575"><path d="M74.093 7.228l2.388 6.27h-4.627l2.24-6.27zm-.896-2.1l-5.224 13.73h1.94l1.343-3.73h5.82l1.343 3.73h1.94l-5.224-13.73h-1.94zm28.2 13.742h1.8V5.138h-1.8v13.73zm-18.35-8.07c.597-.896 1.8-1.642 2.985-1.642 2.388 0 3.582 1.642 3.582 4.03v5.82h-1.8v-5.522c0-1.94-1.045-2.687-2.388-2.687-1.493 0-2.537 1.493-2.537 2.836v5.224h-1.8V9.32h1.8l.15 1.493zm8.06 5.234c0-2.1 1.94-3.284 4.18-3.284 1.343 0 2.24.3 2.537.597v-.3c0-1.493-1.194-2.24-2.388-2.24-1.045 0-1.94.448-2.24 1.343l-1.642-.746c.3-.896 1.493-2.24 3.88-2.24 2.24 0 4.18 1.343 4.18 4.03v5.672h-1.642v-1.343h-.15c-.448.746-1.493 1.642-3.134 1.642-1.94 0-3.582-1.194-3.582-3.134m6.716-1.194s-.746-.597-2.24-.597c-1.8 0-2.537 1.045-2.537 1.8 0 1.045 1.045 1.493 1.94 1.493 1.343 0 2.836-1.194 2.836-2.687"/><path d="M105.735 23.05l2.1-4.925-3.73-8.657h1.8l2.836 6.567 2.836-6.567h1.8l-5.82 13.582h-1.8zm26.27-10.45c-.448-1.194-1.493-1.94-2.537-1.94-1.493 0-2.836 1.343-2.836 3.284s1.343 3.284 2.836 3.284c1.045 0 2.1-.746 2.537-1.8l1.493.896c-.746 1.642-2.24 2.687-4.03 2.687-2.537 0-4.627-2.24-4.627-5.075 0-2.985 2.1-5.075 4.627-5.075 1.8 0 3.284 1.045 4.03 2.687l-1.493 1.045z" fill-rule="evenodd"/><path d="M138.422 19.168c2.388 0 3.582-1.343 3.582-2.985 0-3.582-5.224-2.24-5.224-4.328 0-.746.597-1.194 1.642-1.194s2.1.448 2.537 1.194l1.045-1.045c-.597-.746-2.24-1.8-3.73-1.8-2.24 0-3.433 1.343-3.433 2.985 0 3.433 5.373 2.24 5.373 4.03 0 .896-.597 1.493-1.8 1.493s-1.8-.746-2.388-1.493L134.7 17.08c.896.896 2.24 2.1 3.73 2.1zm-17.015-.298h1.8V9.318h-1.8v9.552z"/><path d="M122.153 4.7c.746 0 1.194.597 1.194 1.194 0 .746-.597 1.194-1.194 1.194s-1.194-.597-1.194-1.194.597-1.194 1.194-1.194zm-2.537 12.687l.3 1.343h-1.8c-1.642 0-2.388-1.194-2.388-2.985V11.1h-1.8V9.3h1.8V6.482h1.8v2.836h2.1v1.8h-2.1v4.925c0 1.343 1.045 1.343 2.1 1.343z" fill-rule="evenodd"/><path d="M77.048-10.042v2.24h5.224c-.15 1.194-.597 2.1-1.194 2.687-.746.746-1.94 1.642-4.03 1.642-3.134 0-5.672-2.537-5.672-5.82 0-3.134 2.537-5.82 5.672-5.82 1.8 0 2.985.746 3.88 1.493l1.493-1.493c-1.343-1.194-2.985-2.24-5.373-2.24-4.328 0-8.06 3.582-8.06 7.9s3.73 7.9 8.06 7.9c2.388 0 4.18-.746 5.522-2.24 1.493-1.493 1.94-3.433 1.94-5.075 0-.448 0-1.045-.15-1.343h-7.313zm13.282-1.8c-2.836 0-5.075 2.1-5.075 5.075s2.24 5.075 5.075 5.075a5.03 5.03 0 0 0 5.075-5.075c0-2.985-2.24-5.075-5.075-5.075zm0 8.2c-1.493 0-2.836-1.343-2.836-3.134S88.837-9.9 90.33-9.9s2.837 1.2 2.837 3.13-1.343 3.134-2.836 3.134zm24.47-7.156c-.597-.597-1.493-1.194-2.836-1.194-2.537 0-4.776 2.24-4.776 5.075s2.24 5.075 4.776 5.075c1.194 0 2.24-.597 2.687-1.194h.15v.746c0 1.94-1.045 2.985-2.687 2.985-1.343 0-2.24-1.045-2.537-1.8l-1.94.746c.597 1.343 2.1 2.985 4.478 2.985 2.687 0 4.925-1.493 4.925-5.373V-12h-2.1v1.194zm-2.537 7.164c-1.493 0-2.687-1.343-2.687-3.134s1.194-3.134 2.687-3.134 2.687 1.343 2.687 3.134-1.194 3.134-2.687 3.134zm-10.897-8.2c-2.836 0-5.075 2.1-5.075 5.075s2.24 5.075 5.075 5.075a5.03 5.03 0 0 0 5.075-5.075c.15-2.985-2.24-5.075-5.075-5.075zm0 8.2c-1.493 0-2.836-1.343-2.836-3.134s1.343-3.134 2.836-3.134 2.836 1.194 2.836 3.134-1.343 3.134-2.836 3.134zM118.7-17.206h2.24v15.522h-2.24v-15.522zm8.358 13.582c-1.194 0-1.94-.597-2.537-1.493l6.866-2.836-.3-.597c-.448-1.194-1.8-3.284-4.328-3.284-2.687 0-4.776 2.1-4.776 5.075a5.03 5.03 0 0 0 5.075 5.075c2.388 0 3.73-1.493 4.328-2.24l-1.8-1.194c-.597.896-1.343 1.493-2.537 1.493zm-.15-6.27c.896 0 1.642.448 1.94 1.194l-4.627 1.94c0-2.24 1.493-3.134 2.687-3.134z"/></g><g transform="matrix(.198617 0 0 .198616 29.128442 -18.08775)"><path d="M130 29v132c0 14.77 10.2 23 21 23 10 0 21-7 21-23V30c0-13.54-10-22-21-22s-21 9.33-21 21z" fill="#f9ab00"/><g fill="#e37400"><path d="M75 96v65c0 14.77 10.2 23 21 23 10 0 21-7 21-23V97c0-13.54-10-22-21-22s-21 9.33-21 21z"/><circle r="21" cy="163" cx="41"/></g></g></svg>`,
+  meta: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false"><path d="M6.897 4h-.024l-.031 2.615h.022c1.715 0 3.046 1.357 5.94 6.246l.175.297.012.02 1.62-2.438-.012-.019a48.763 48.763 0 00-1.098-1.716 28.01 28.01 0 00-1.175-1.629C10.413 4.932 8.812 4 6.896 4z" fill="url(#meta-lobe-icons-meta-0-_R_0_)"></path><path d="M6.873 4C4.95 4.01 3.247 5.258 2.02 7.17a4.352 4.352 0 00-.01.017l2.254 1.231.011-.017c.718-1.083 1.61-1.774 2.568-1.785h.021L6.896 4h-.023z" fill="url(#meta-lobe-icons-meta-1-_R_0_)"></path><path d="M2.019 7.17l-.011.017C1.2 8.447.598 9.995.274 11.664l-.005.022 2.534.6.004-.022c.27-1.467.786-2.828 1.456-3.845l.011-.017L2.02 7.17z" fill="url(#meta-lobe-icons-meta-2-_R_0_)"></path><path d="M2.807 12.264l-2.533-.6-.005.022c-.177.918-.267 1.851-.269 2.786v.023l2.598.233v-.023a12.591 12.591 0 01.21-2.44z" fill="url(#meta-lobe-icons-meta-3-_R_0_)"></path><path d="M2.677 15.537a5.462 5.462 0 01-.079-.813v-.022L0 14.468v.024a8.89 8.89 0 00.146 1.652l2.535-.585a4.106 4.106 0 01-.004-.022z" fill="url(#meta-lobe-icons-meta-4-_R_0_)"></path><path d="M3.27 16.89c-.284-.31-.484-.756-.589-1.328l-.004-.021-2.535.585.004.021c.192 1.01.568 1.85 1.106 2.487l.014.017 2.018-1.745a2.106 2.106 0 01-.015-.016z" fill="url(#meta-lobe-icons-meta-5-_R_0_)"></path><path d="M10.78 9.654c-1.528 2.35-2.454 3.825-2.454 3.825-2.035 3.2-2.739 3.917-3.871 3.917a1.545 1.545 0 01-1.186-.508l-2.017 1.744.014.017C2.01 19.518 3.058 20 4.356 20c1.963 0 3.374-.928 5.884-5.33l1.766-3.13a41.283 41.283 0 00-1.227-1.886z" fill="#0082FB"></path><path d="M13.502 5.946l-.016.016c-.4.43-.786.908-1.16 1.416.378.483.768 1.024 1.175 1.63.48-.743.928-1.345 1.367-1.807l.016-.016-1.382-1.24z" fill="url(#meta-lobe-icons-meta-6-_R_0_)"></path><path d="M20.918 5.713C19.853 4.633 18.583 4 17.225 4c-1.432 0-2.637.787-3.723 1.944l-.016.016 1.382 1.24.016-.017c.715-.747 1.408-1.12 2.176-1.12.826 0 1.6.39 2.27 1.075l.015.016 1.589-1.425-.016-.016z" fill="#0082FB"></path><path d="M23.998 14.125c-.06-3.467-1.27-6.566-3.064-8.396l-.016-.016-1.588 1.424.015.016c1.35 1.392 2.277 3.98 2.361 6.971v.023h2.292v-.022z" fill="url(#meta-lobe-icons-meta-7-_R_0_)"></path><path d="M23.998 14.15v-.023h-2.292v.022c.004.14.006.282.006.424 0 .815-.121 1.474-.368 1.95l-.011.022 1.708 1.782.013-.02c.62-.96.946-2.293.946-3.91 0-.083 0-.165-.002-.247z" fill="url(#meta-lobe-icons-meta-8-_R_0_)"></path><path d="M21.344 16.52l-.011.02c-.214.402-.519.67-.917.787l.778 2.462a3.493 3.493 0 00.438-.182 3.558 3.558 0 001.366-1.218l.044-.065.012-.02-1.71-1.784z" fill="url(#meta-lobe-icons-meta-9-_R_0_)"></path><path d="M19.92 17.393c-.262 0-.492-.039-.718-.14l-.798 2.522c.449.153.927.222 1.46.222.492 0 .943-.073 1.352-.215l-.78-2.462c-.167.05-.341.075-.517.073z" fill="url(#meta-lobe-icons-meta-10-_R_0_)"></path><path d="M18.323 16.534l-.014-.017-1.836 1.914.016.017c.637.682 1.246 1.105 1.937 1.337l.797-2.52c-.291-.125-.573-.353-.9-.731z" fill="url(#meta-lobe-icons-meta-11-_R_0_)"></path><path d="M18.309 16.515c-.55-.642-1.232-1.712-2.303-3.44l-1.396-2.336-.011-.02-1.62 2.438.012.02.989 1.668c.959 1.61 1.74 2.774 2.493 3.585l.016.016 1.834-1.914a2.353 2.353 0 01-.014-.017z" fill="url(#meta-lobe-icons-meta-12-_R_0_)"></path><defs><linearGradient id="meta-lobe-icons-meta-0-_R_0_" x1="75.897%" x2="26.312%" y1="89.199%" y2="12.194%"><stop offset=".06%" stop-color="#0867DF"></stop><stop offset="45.39%" stop-color="#0668E1"></stop><stop offset="85.91%" stop-color="#0064E0"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-1-_R_0_" x1="21.67%" x2="97.068%" y1="75.874%" y2="23.985%"><stop offset="13.23%" stop-color="#0064DF"></stop><stop offset="99.88%" stop-color="#0064E0"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-2-_R_0_" x1="38.263%" x2="60.895%" y1="89.127%" y2="16.131%"><stop offset="1.47%" stop-color="#0072EC"></stop><stop offset="68.81%" stop-color="#0064DF"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-3-_R_0_" x1="47.032%" x2="52.15%" y1="90.19%" y2="15.745%"><stop offset="7.31%" stop-color="#007CF6"></stop><stop offset="99.43%" stop-color="#0072EC"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-4-_R_0_" x1="52.155%" x2="47.591%" y1="58.301%" y2="37.004%"><stop offset="7.31%" stop-color="#007FF9"></stop><stop offset="100%" stop-color="#007CF6"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-5-_R_0_" x1="37.689%" x2="61.961%" y1="12.502%" y2="63.624%"><stop offset="7.31%" stop-color="#007FF9"></stop><stop offset="100%" stop-color="#0082FB"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-6-_R_0_" x1="34.808%" x2="62.313%" y1="68.859%" y2="23.174%"><stop offset="27.99%" stop-color="#007FF8"></stop><stop offset="91.41%" stop-color="#0082FB"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-7-_R_0_" x1="43.762%" x2="57.602%" y1="6.235%" y2="98.514%"><stop offset="0%" stop-color="#0082FB"></stop><stop offset="99.95%" stop-color="#0081FA"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-8-_R_0_" x1="60.055%" x2="39.88%" y1="4.661%" y2="69.077%"><stop offset="6.19%" stop-color="#0081FA"></stop><stop offset="100%" stop-color="#0080F9"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-9-_R_0_" x1="30.282%" x2="61.081%" y1="59.32%" y2="33.244%"><stop offset="0%" stop-color="#027AF3"></stop><stop offset="100%" stop-color="#0080F9"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-10-_R_0_" x1="20.433%" x2="82.112%" y1="50.001%" y2="50.001%"><stop offset="0%" stop-color="#0377EF"></stop><stop offset="99.94%" stop-color="#0279F1"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-11-_R_0_" x1="40.303%" x2="72.394%" y1="35.298%" y2="57.811%"><stop offset=".19%" stop-color="#0471E9"></stop><stop offset="100%" stop-color="#0377EF"></stop></linearGradient><linearGradient id="meta-lobe-icons-meta-12-_R_0_" x1="32.254%" x2="68.003%" y1="19.719%" y2="84.908%"><stop offset="27.65%" stop-color="#0867DF"></stop><stop offset="100%" stop-color="#0471E9"></stop></linearGradient></defs></svg>`,
+  microsoft: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false"><path d="M11.49 2H2v9.492h9.492V2h-.002z" fill="#F25022"></path><path d="M22 2h-9.492v9.492H22V2z" fill="#7FBA00"></path><path d="M11.49 12.508H2V22h9.492v-9.492h-.002z" fill="#00A4EF"></path><path d="M22 12.508h-9.492V22H22v-9.492z" fill="#FFB900"></path></svg>`,
+  tiktok: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="372.9 160.2 559.6 630.6" preserveAspectRatio="xMidYMid meet" focusable="false"><g id="tiktok-surface1"><path style=" stroke:none;fill-rule:nonzero;fill:rgb(14.509583%,95.68634%,93.333435%);fill-opacity:1;" d="M 592.964844 411.1875 L 592.964844 386.773438 C 584.789062 385.660156 576.488281 384.964844 568.015625 384.964844 C 465.921875 384.964844 382.871094 468.019531 382.871094 570.109375 C 382.871094 632.75 414.164062 688.183594 461.910156 721.699219 C 431.09375 688.621094 412.796875 644.304688 412.796875 595.636719 C 412.796875 495.011719 492.890625 413.523438 592.964844 411.1875 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(14.509583%,95.68634%,93.333435%);fill-opacity:1;" d="M 597.335938 680.800781 C 642.882812 680.800781 680.679688 643.960938 682.371094 598.816406 L 682.507812 196.308594 L 755.535156 195.691406 C 754 187.40625 753.160156 178.886719 753.160156 170.164062 L 652.570312 170.164062 L 652.40625 573.292969 C 650.714844 618.433594 613.5625 654.664062 568.015625 654.664062 C 553.855469 654.664062 540.527344 651.128906 528.792969 644.949219 C 544.160156 666.25 569.125 680.800781 597.335938 680.800781 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(14.509583%,95.68634%,93.333435%);fill-opacity:1;" d="M 893.101562 333.1875 L 893.101562 310.105469 C 865.007812 310.105469 838.839844 301.753906 816.894531 287.445312 C 836.433594 309.890625 862.976562 326.738281 893.101562 333.1875 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(99.607849%,17.254639%,33.332825%);fill-opacity:1;" d="M 816.894531 287.445312 C 795.484375 262.859375 782.476562 230.773438 782.476562 195.691406 L 755.535156 195.691406 C 762.628906 234.015625 785.375 266.894531 816.894531 287.445312 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(99.607849%,17.254639%,33.332825%);fill-opacity:1;" d="M 568.015625 485.554688 C 521.390625 485.554688 483.460938 523.488281 483.460938 570.113281 C 483.460938 602.578125 501.878906 630.789062 528.792969 644.953125 C 518.761719 631.050781 512.777344 614.046875 512.777344 595.636719 C 512.777344 549.011719 550.714844 511.078125 597.335938 511.078125 C 606.039062 511.078125 614.386719 512.511719 622.285156 514.988281 L 622.285156 412.296875 C 614.113281 411.183594 605.808594 410.488281 597.335938 410.488281 C 595.867188 410.488281 594.421875 410.566406 592.964844 410.597656 L 592.964844 489.460938 C 585.066406 486.988281 576.71875 485.554688 568.015625 485.554688 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(99.607849%,17.254639%,33.332825%);fill-opacity:1;" d="M 893.101562 332.515625 L 893.101562 410.695312 C 840.945312 410.695312 792.609375 394.011719 753.160156 365.691406 L 753.160156 570.109375 C 753.160156 672.203125 670.105469 755.253906 568.015625 755.253906 C 528.5625 755.253906 491.980469 742.8125 461.910156 721.699219 C 495.734375 758.011719 543.914062 780.78125 597.332031 780.78125 C 699.425781 780.78125 782.476562 697.726562 782.476562 595.636719 L 782.476562 391.21875 C 821.929688 419.535156 870.265625 436.222656 922.421875 436.222656 L 922.421875 335.628906 C 912.367188 335.628906 902.5625 334.542969 893.101562 332.515625 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 753.160156 570.109375 L 753.160156 365.691406 C 792.609375 394.007812 840.945312 410.695312 893.101562 410.695312 L 893.101562 332.515625 C 862.976562 326.066406 836.433594 309.886719 816.894531 287.445312 C 785.375 266.894531 762.628906 234.015625 755.535156 195.691406 L 681.890625 195.691406 L 681.726562 598.816406 C 680.035156 643.960938 642.882812 680.191406 597.335938 680.191406 C 569.125 680.191406 544.160156 666.25 528.792969 644.949219 C 501.878906 630.789062 483.457031 602.578125 483.457031 570.109375 C 483.457031 523.484375 521.390625 485.554688 568.011719 485.554688 C 576.71875 485.554688 585.066406 486.988281 592.964844 489.464844 L 592.964844 410.601562 C 492.890625 412.9375 412.191406 495.011719 412.191406 595.636719 C 412.191406 644.304688 431.09375 688.621094 461.910156 721.699219 C 491.984375 742.8125 528.5625 755.257812 568.011719 755.257812 C 670.105469 755.257812 753.160156 672.199219 753.160156 570.109375 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 165.765625 890.890625 L 327.980469 890.890625 L 313.085938 937.300781 L 271.003906 937.285156 L 271.003906 1108.867188 L 218.566406 1108.867188 L 218.566406 937.285156 L 165.804688 937.382812 Z M 165.765625 890.890625 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 593.710938 890.890625 L 759.679688 890.890625 L 744.785156 937.300781 L 699.03125 937.285156 L 699.03125 1108.867188 L 646.511719 1108.867188 L 646.511719 937.285156 L 593.75 937.382812 Z M 593.710938 890.890625 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 337.875 960.226562 L 389.882812 960.226562 L 389.828125 1108.867188 L 338.183594 1108.867188 Z M 337.875 960.226562 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 410.507812 890.277344 L 462.460938 890.277344 L 462.460938 991.792969 L 513.941406 941.269531 L 575.960938 941.273438 L 510.835938 1004.472656 L 583.777344 1108.867188 L 526.539062 1108.867188 L 477.859375 1036.472656 L 462.460938 1051.441406 L 462.460938 1108.867188 L 410.507812 1108.867188 Z M 410.507812 890.277344 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 960.964844 890.277344 L 1012.914062 890.277344 L 1012.914062 991.792969 L 1064.398438 941.269531 L 1126.417969 941.273438 L 1061.289062 1004.472656 L 1134.234375 1108.867188 L 1076.996094 1108.867188 L 1028.316406 1036.472656 L 1012.914062 1051.441406 L 1012.914062 1108.867188 L 960.964844 1108.867188 Z M 960.964844 890.277344 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 390.039062 917.0625 C 390.039062 931.519531 378.320312 943.242188 363.863281 943.242188 C 349.402344 943.242188 337.683594 931.519531 337.683594 917.0625 C 337.683594 902.605469 349.402344 890.882812 363.863281 890.882812 C 378.320312 890.882812 390.039062 902.605469 390.039062 917.0625 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(14.509583%,95.68634%,93.333435%);fill-opacity:1;" d="M 753.410156 1019.886719 C 753.410156 973.09375 789.539062 934.765625 835.421875 931.207031 C 833.117188 931.027344 829.59375 930.90625 827.246094 930.90625 C 778.101562 930.90625 738.265625 970.746094 738.265625 1019.886719 C 738.265625 1069.03125 778.101562 1108.867188 827.246094 1108.867188 C 829.59375 1108.867188 833.117188 1108.75 835.421875 1108.570312 C 789.539062 1105.011719 753.410156 1066.683594 753.410156 1019.886719 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(99.607849%,17.254639%,33.332825%);fill-opacity:1;" d="M 855.246094 930.90625 C 852.878906 930.90625 849.332031 931.027344 847.011719 931.210938 C 892.863281 934.796875 928.960938 973.113281 928.960938 1019.886719 C 928.960938 1066.660156 892.863281 1104.976562 847.011719 1108.566406 C 849.332031 1108.746094 852.878906 1108.867188 855.246094 1108.867188 C 904.390625 1108.867188 944.226562 1069.03125 944.226562 1019.886719 C 944.226562 970.746094 904.390625 930.90625 855.246094 930.90625 "/><path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 841.1875 1063.144531 C 817.296875 1063.144531 797.929688 1043.777344 797.929688 1019.886719 C 797.929688 996 817.296875 976.632812 841.1875 976.632812 C 865.078125 976.632812 884.441406 996 884.441406 1019.886719 C 884.441406 1043.777344 865.078125 1063.144531 841.1875 1063.144531 M 841.1875 930.910156 C 792.042969 930.910156 752.207031 970.746094 752.207031 1019.886719 C 752.207031 1069.03125 792.042969 1108.867188 841.1875 1108.867188 C 890.328125 1108.867188 930.167969 1069.03125 930.167969 1019.886719 C 930.167969 970.746094 890.328125 930.910156 841.1875 930.910156 "/></g></svg>`,
+};
+/* ---- Beépített logók – VÉGE ---- */
+
+/** A Google saját rendszerei: ezek a tagek beépítetten consent-tudatosak. */
+const GOOGLE_PLATFORMOK = new Set(['ga4', 'google_ads', 'floodlight', 'ua']);
+
+/** Az egyéni HTML tagek tartalomcímkéiből (HTML_TAG_TARTALOM) platformkulcs. */
+const CIMKE_PLATFORM = {
+  'Meta Pixel': 'meta',
+  'TikTok Pixel': 'tiktok',
+  'Google gtag': 'ga4',
+  'Matomo': 'matomo',
+  'Hotjar': 'hotjar',
+  'Microsoft Clarity': 'clarity',
+  'Microsoft Ads UET': 'microsoft',
+  'Snap Pixel': 'snap',
+  'Pinterest Tag': 'pinterest',
+  'X (Twitter) Pixel': 'x',
+  'Reddit Pixel': 'reddit',
+  'Retargeting (Criteo / RTB House)': 'criteo',
+  'Barion Pixel': 'barion',
+  'OptiMonk': 'optimonk',
+  'Maileon (e-mail)': 'maileon',
+  'Salesforce Marketing Cloud': 'sfmc',
+  'Intercom': 'intercom',
+  'Árukereső / Árgép': 'arukereso',
+};
+
+function platformAdat(kulcs) {
+  const p = PLATFORMOK[kulcs] || { nev: String(kulcs || 'Ismeretlen'), monogram: '?', szin: '#5F6368' };
+  return { ...p, svg: PLATFORM_LOGOK[kulcs] || '' };
+}
+
+/**
+ * Fehér vagy sötét felirat a jelvényen, a háttér világossága alapján.
+ * (WCAG relatív luminancia — így a sárga Snap-jelvényen is olvasható marad.)
+ */
+function jelvenySzoveg(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return '#ffffff';
+  const n = parseInt(m[1], 16);
+  const cs = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  const L = 0.2126 * cs[0] + 0.7152 * cs[1] + 0.0722 * cs[2];
+  return L > 0.4 ? '#14141a' : '#ffffff';
+}
+
+/** Egysoros, rövidített paraméterérték — a táblázat így nem esik szét. */
+function parameterErtek(v) {
+  if (v === undefined || v === null) return '';
+  const s = (typeof v === 'object' ? JSON.stringify(v) : String(v)).replace(/\s+/g, ' ').trim();
+  return s.length > 90 ? s.slice(0, 87) + '…' : s;
+}
+
+/**
+ * Egy JS objektum-literál ELSŐ SZINTJÉNEK kulcs–érték párjai, nyers kódból.
+ *
+ * Miért kell: az egyéni HTML tagekben a pixel-hívások paraméterei csak
+ * kódként vannak meg (`fbq('track','Purchase',{value:…, currency:…})`). Teljes
+ * JS-értelmezőre nincs szükség — a kulcsok és a nyers érték (gyakran egy
+ * `{{GTM változó}}`) már megmondja, mi megy át.
+ *
+ * Idézőjelen belüli zárójelre és vesszőre nem lép, a beágyazott objektumokba
+ * pedig nem megy bele: azok az első szint értékeként, egyben jelennek meg.
+ * Ha a kód csonka (a tag-előnézet levágta), a már összegyűjtött párokat adja.
+ *
+ * @param {string} szoveg a teljes kód
+ * @param {number} kezdet a nyitó `{` indexe
+ */
+function objektumLiteralParok(szoveg, kezdet) {
+  const s = String(szoveg || '');
+  if (s[kezdet] !== '{') return [];
+  const darabok = [];
+  let melyseg = 0;
+  let idezojel = null;
+  let darabKezdet = kezdet + 1;
+  for (let i = kezdet; i < s.length; i++) {
+    const ch = s[i];
+    if (idezojel) {
+      if (ch === '\\') { i++; continue; }
+      if (ch === idezojel) idezojel = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') { idezojel = ch; continue; }
+    if (ch === '{' || ch === '[' || ch === '(') { melyseg++; continue; }
+    if (ch === '}' || ch === ']' || ch === ')') {
+      melyseg--;
+      if (melyseg <= 0) { darabok.push(s.slice(darabKezdet, i)); break; }
+      continue;
+    }
+    if (ch === ',' && melyseg === 1) { darabok.push(s.slice(darabKezdet, i)); darabKezdet = i + 1; }
+  }
+  // Csonka kód (levágott tag-előnézet): az utolsó, lezáratlan pár se vesszen el
+  if (melyseg > 0 && darabKezdet < s.length) darabok.push(s.slice(darabKezdet));
+
+  const ki = [];
+  for (const darab of darabok) {
+    const m = /^\s*(?:'([^']+)'|"([^"]+)"|([A-Za-z_$][\w$]*))\s*:\s*([\s\S]+)$/.exec(darab);
+    if (!m) continue;
+    /* A sima szövegértéket idézőjel nélkül mutatjuk (`'HUF'` → `HUF`), hogy a
+       beépített tagek paramétereivel egy formában legyen. A `{{változó}}` és
+       minden összetett érték változatlanul marad. */
+    const nyers = String(m[4]).trim();
+    const szoveg = /^'([^']*)'$|^"([^"]*)"$/.exec(nyers);
+    ki.push({ nev: m[1] || m[2] || m[3], ertek: parameterErtek(szoveg ? (szoveg[1] ?? szoveg[2]) : nyers) });
+  }
+  return ki;
+}
+
+/**
+ * Pixel-hívások az egyéni HTML tagek kódjából: melyik platformra milyen
+ * esemény megy, milyen paraméterekkel.
+ *
+ * A GTM ezekről nem tudja, hogy „esemény" — számára ez egy HTML blokk. Ezért
+ * a Meta / TikTok / UET eseménylistát eddig semmi nem mutatta meg, pedig
+ * pont ez az, amit egy átvételnél elsőként kérdeznek.
+ */
+const KOD_ESEMENY_MINTAK = [
+  { platform: 'meta',      re: /fbq\s*\(\s*['"]track(?:Custom|Single|SingleCustom)?['"]\s*,\s*(?:['"][\w-]{6,}['"]\s*,\s*)?['"]([^'"]+)['"]/g },
+  { platform: 'tiktok',    re: /ttq(?:\.instance\s*\([^)]*\))?\s*\.track\s*\(\s*['"]([^'"]+)['"]/g },
+  { platform: 'microsoft', re: /uetq['"\]]*\s*\.push\s*\(\s*['"]event['"]\s*,\s*['"]([^'"]*)['"]/g, alapNev: 'UET esemény' },
+  { platform: 'pinterest', re: /pintrk\s*\(\s*['"]track['"]\s*,\s*['"]([^'"]+)['"]/g },
+  { platform: 'snap',      re: /snaptr\s*\(\s*['"]track['"]\s*,\s*['"]([^'"]+)['"]/g },
+  { platform: 'x',         re: /twq\s*\(\s*['"](?:event|track)['"]\s*,\s*['"]([^'"]+)['"]/g },
+  { platform: 'reddit',    re: /rdt\s*\(\s*['"]track['"]\s*,\s*['"]([^'"]+)['"]/g },
+  { platform: 'ga4',       re: /gtag\s*\(\s*['"]event['"]\s*,\s*['"]([^'"]+)['"]/g },
+];
+
+function kodEsemenyek(kod) {
+  const s = String(kod || '');
+  if (!s) return [];
+  const ki = [];
+  for (const minta of KOD_ESEMENY_MINTAK) {
+    minta.re.lastIndex = 0;
+    let m;
+    let db = 0;
+    while ((m = minta.re.exec(s)) !== null && db < 25) {
+      db++;
+      // az eseménynév után jöhet vessző és szóköz, majd a paraméterobjektum
+      let i = m.index + m[0].length;
+      while (i < s.length && /[\s,]/.test(s[i])) i++;
+      const parameterek = s[i] === '{' ? objektumLiteralParok(s, i) : [];
+
+      /* A `gtag('event', …)` hívás célját a `send_to` dönti el: ugyanaz a
+         hívás mehet GA4-be, Google Adsbe és Floodlightba is. */
+      let platform = minta.platform;
+      if (platform === 'ga4') {
+        const sendTo = String(parameterek.find((p) => p.nev === 'send_to')?.ertek || '').replace(/['"]/g, '');
+        if (/^AW-/i.test(sendTo)) platform = 'google_ads';
+        else if (/^DC-/i.test(sendTo)) platform = 'floodlight';
+      }
+      ki.push({ platform, nev: m[1] || minta.alapNev || 'esemény', parameterek });
+    }
+  }
+  return ki;
+}
+
+/** A LIST típusú GTM paraméter tömbként — a publikált gtm.js-ből JSON szövegként jön. */
+function listaErtek(v) {
+  if (Array.isArray(v)) return v.filter((x) => x && typeof x === 'object');
+  if (typeof v === 'string' && /^\s*\[/.test(v)) {
+    try {
+      const p = JSON.parse(v);
+      return Array.isArray(p) ? p.filter((x) => x && typeof x === 'object') : [];
+    } catch { return []; }
+  }
+  return [];
+}
+
+/** A felsorolt kulcsokból paramétersor, ha van értékük. */
+function valogatParameterek(p, kulcsok) {
+  const ki = [];
+  for (const k of kulcsok) {
+    const v = p ? p[k] : undefined;
+    if (v === undefined || v === null || v === '' || v === false) continue;
+    ki.push({ nev: k, ertek: parameterErtek(v) });
+  }
+  return ki;
+}
+
+/** Egy GA4 esemény tag paraméterei: eseményparaméterek + felhasználói tulajdonságok. */
+function ga4EsemenyParameterek(p) {
+  const ki = [];
+  for (const kulcs of ['eventSettingsTable', 'eventParameters']) {
+    for (const sor of listaErtek(p[kulcs])) {
+      const nev = sor.parameter ?? sor.name ?? sor.key;
+      if (nev) ki.push({ nev: String(nev), ertek: parameterErtek(sor.parameterValue ?? sor.value) });
+    }
+  }
+  for (const sor of listaErtek(p.userProperties)) {
+    const nev = sor.name ?? sor.parameter;
+    if (nev) ki.push({ nev: 'user_property · ' + nev, ertek: parameterErtek(sor.value ?? sor.parameterValue) });
+  }
+  if (p.eventSettingsVariable) ki.push({ nev: 'megosztott eseménybeállítások', ertek: parameterErtek(p.eventSettingsVariable) });
+  if (p.measurementIdOverride) ki.push({ nev: 'measurement_id', ertek: parameterErtek(p.measurementIdOverride) });
+  return ki;
+}
+
+/**
+ * Mit küld egy beépített (nem egyéni HTML) tag: eseménynév + paraméterek.
+ * Ami nincs a listán, az nem küld eseményt — konfiguráció (`gaawc`), figyelő
+ * vagy Conversion Linker (`gclidw`) —, ezeknél nem találunk ki eseményt.
+ */
+const NATIV_ESEMENY = {
+  gaawe: (p) => ({ nev: p.eventName || p.eventNameOverride || 'esemény', parameterek: ga4EsemenyParameterek(p) }),
+  googtag: (p) => ({
+    nev: 'oldalletöltés (automatikus)',
+    parameterek: ga4EsemenyParameterek(p).concat(valogatParameterek(p, ['sendPageView', 'configSettingsVariable'])),
+  }),
+  awct: (p) => ({
+    nev: 'konverzió' + (p.conversionLabel ? ' · ' + p.conversionLabel : ''),
+    parameterek: valogatParameterek(p, ['conversionValue', 'currencyCode', 'orderId', 'conversionLabel',
+      'enableEnhancedConversions', 'userDataVariable', 'enableProductReporting']),
+  }),
+  sp: (p) => ({
+    nev: 'remarketing',
+    parameterek: valogatParameterek(p, ['conversionId', 'conversionLabel', 'enableDynamicRemarketing',
+      'eventValue', 'customParamsFormat', 'dataLayerVariable', 'customParams']),
+  }),
+  flc: (p) => ({
+    nev: 'Floodlight · ' + (p.groupTag || '?') + ' / ' + (p.activityTag || '?'),
+    parameterek: valogatParameterek(p, ['groupTag', 'activityTag', 'countingMethod', 'ordinalType', 'customVariable']),
+  }),
+  fls: (p) => ({
+    nev: 'Floodlight értékesítés · ' + (p.groupTag || '?') + ' / ' + (p.activityTag || '?'),
+    parameterek: valogatParameterek(p, ['groupTag', 'activityTag', 'revenue', 'quantity', 'ordinalValue',
+      'countingMethod', 'customVariable']),
+  }),
+  baut: (p) => ({
+    nev: p.eventType || p.eventAction || 'UET esemény',
+    parameterek: valogatParameterek(p, ['tagId', 'eventCategory', 'eventAction', 'eventLabel', 'eventValue',
+      'revenueValue', 'currencyCode', 'ecommPageType', 'ecommProdId', 'ecommTotalValue']),
+  }),
+  bzi: (p) => ({ nev: 'Insight Tag betöltés', parameterek: valogatParameterek(p, ['id', 'conversionId']) }),
+  pntr: (p) => ({
+    nev: p.eventName || 'Pinterest esemény',
+    parameterek: valogatParameterek(p, ['tagId', 'eventName', 'value', 'currency', 'orderId', 'orderQuantity', 'customProperties']),
+  }),
+  twitter_website_tag: (p) => ({
+    nev: p.eventType || p.trackType || 'X esemény',
+    parameterek: valogatParameterek(p, ['twitterPixelId', 'eventId', 'conversionId', 'value', 'currency', 'numItems']),
+  }),
+  ua: (p) => ({
+    nev: String(p.trackType || 'TRACK_PAGEVIEW').replace(/^TRACK_/, '').toLowerCase(),
+    parameterek: valogatParameterek(p, ['trackingId', 'eventCategory', 'eventAction', 'eventLabel', 'eventValue', 'nonInteraction']),
+  }),
+};
+
+/**
+ * Egy tag által küldött események. A visszaadott elem `platform` mezője
+ * `null`, ha az esemény a tag saját célrendszerébe megy; egyéni HTML-nél
+ * viszont a kódból derül ki a platform, és egy tagben több is lehet.
+ */
+function tagEsemenyek(t) {
+  const p = (t && t.raw) || {};
+  if (t.type === 'html' || t.type === 'img') {
+    return kodEsemenyek(p.html || p.url || t.htmlPreview || '');
+  }
+  if (t.type === 'cvt_template' || /^cvt_/.test(String(t.type))) {
+    const parameterek = Object.entries(p)
+      .filter(([k, v]) => k !== 'html' && k !== 'sablonAzonosito' && v !== '' && v !== null && v !== undefined && v !== false)
+      .slice(0, 12)
+      .map(([k, v]) => ({ nev: k, ertek: parameterErtek(v) }));
+    return [{ platform: null, nev: p.eventName || p.event || p.trackType || 'sablon futtatása', parameterek }];
+  }
+  const keszito = NATIV_ESEMENY[t.type];
+  if (!keszito) return [];
+  const e = keszito(p);
+  return e ? [{ platform: null, nev: e.nev, parameterek: e.parameterek || [] }] : [];
+}
+
+
+/* ==================================================================
    7e. GTM konténer-elemző
    ================================================================== */
 
@@ -8149,10 +8511,12 @@ function analyzeContainer(input) {
     tagInfos.map((t) => t.measurementId).filter((x) => x && /^G-/.test(x))
   )];
 
-  /* ---------------- Hova megy innen az adat? ----------------
+  /* ---------------- Hova megy innen az adat, és mit? ----------------
      Egy idegen konténernél ez az első kérdés: melyik rendszerbe, melyik
-     fiókba küld ez a konténer. Ebből derül ki az is, ha egy régi ügynökség
-     hirdetési fiókja vagy egy elfelejtett property még mindig kap adatot. */
+     fiókba küld ez a konténer — és mit küld oda. Ebből derül ki az is, ha egy
+     régi ügynökség hirdetési fiókja vagy egy elfelejtett property még mindig
+     kap adatot. A platformkulcs (PLATFORMOK) köti össze az elemzést a
+     felülettel: abból lesz a jelvény, a szín és a kártya sorrendje. */
   const celrendszer = (t) => {
     const q = t.raw || {};
     const html = String(q.html || '');
@@ -8163,57 +8527,134 @@ function analyzeContainer(input) {
       const m = /^\{\{Konstans: (.+?) #\d+\}\}$/.exec(String(x || ''));
       return m ? m[1] : x;
     };
-    if (/^cvt_/.test(t.type)) return { rendszer: 'Galéria-sablon', azonosito: q.sablonAzonosito || t.type.replace(/^cvt_/, '') };
+    const pf = (kulcs, azonosito) => ({ platform: kulcs, rendszer: PLATFORMOK[kulcs].nev, azonosito });
+
+    if (t.type === 'cvt_template' || /^cvt_/.test(String(t.type))) {
+      return pf('sablon', q.sablonAzonosito || String(t.type).replace(/^cvt_/, ''));
+    }
     switch (t.type) {
       case 'googtag':
       case 'gaawc': {
         const id = String(feloldva(t.measurementId) || '');
-        return {
-          rendszer: /^AW-/.test(id) ? 'Google Ads' : /^DC-/.test(id) ? 'Campaign Manager (Floodlight)' : 'Google Analytics 4',
-          azonosito: id,
-        };
+        return pf(/^AW-/.test(id) ? 'google_ads' : /^DC-/.test(id) ? 'floodlight' : 'ga4', id);
       }
-      case 'gaawe': return { rendszer: 'Google Analytics 4', azonosito: feloldva(t.measurementId) || '(a Google tag célja)' };
+      case 'gaawe': return pf('ga4', feloldva(t.measurementId) || '(a Google tag célja)');
       case 'awct':
-      case 'sp': return { rendszer: 'Google Ads', azonosito: q.conversionId ? 'AW-' + feloldva(q.conversionId) : '(azonosító nélkül)' };
+      case 'sp': return pf('google_ads', q.conversionId ? 'AW-' + feloldva(q.conversionId) : '(azonosító nélkül)');
       case 'flc':
-      case 'fls': return { rendszer: 'Campaign Manager (Floodlight)', azonosito: q.advertiserId ? 'DC-' + feloldva(q.advertiserId) : '(azonosító nélkül)' };
-      case 'ua': return { rendszer: 'Universal Analytics (megszűnt)', azonosito: feloldva(t.trackingId) || '(azonosító nélkül)' };
-      case 'hjtc': return { rendszer: 'Hotjar', azonosito: q.hotjar_site_id || '' };
+      case 'fls': return pf('floodlight', q.advertiserId ? 'DC-' + feloldva(q.advertiserId) : '(azonosító nélkül)');
+      case 'ua': return pf('ua', feloldva(t.trackingId) || '(azonosító nélkül)');
+      case 'hjtc': return pf('hotjar', q.hotjar_site_id || '');
+      case 'bzi': return pf('linkedin', feloldva(q.id) || '');
+      case 'baut': return pf('microsoft', feloldva(q.tagId) || '');
+      case 'pntr': return pf('pinterest', feloldva(q.tagId) || '');
+      case 'twitter_website_tag': return pf('x', feloldva(q.twitterPixelId) || '');
       case 'html':
       case 'img': {
         const meta = html.match(/fbq\s*\(\s*['"]init['"]\s*,\s*['"](\d{8,20})/);
-        if (meta) return { rendszer: 'Meta Pixel', azonosito: meta[1] };
+        if (meta) return pf('meta', meta[1]);
         const cimkek = htmlTagTartalma(html).cimkek.filter((x) => !x.startsWith('⚠'));
-        if (cimkek.length) return { rendszer: cimkek[0], azonosito: '' };
-        return { rendszer: 'Egyéni HTML – nem azonosított', azonosito: '' };
+        if (cimkek.length) {
+          const kulcs = CIMKE_PLATFORM[cimkek[0]];
+          // Amit ismerünk, az a saját nevén; amit nem, az a felismert címkével
+          return kulcs ? pf(kulcs, '') : { platform: 'egyeb', rendszer: cimkek[0], azonosito: '' };
+        }
+        return pf('egyeb', '');
       }
       default: return null; // figyelő (listener) és egyéb technikai tag: nem küld adatot
     }
   };
 
   const celMap = new Map();
-  for (const t of tagInfos) {
-    const c = celrendszer(t);
-    if (!c) continue;
-    const kulcs = c.rendszer + '|' + (c.azonosito || '');
+  const celEntry = (platform, rendszer, azonosito) => {
+    const kulcs = [platform, rendszer, azonosito || ''].join('|');
     if (!celMap.has(kulcs)) {
       celMap.set(kulcs, {
-        rendszer: c.rendszer, azonosito: c.azonosito || null,
+        platform, rendszer, azonosito: azonosito || null,
         tagDb: 0, szuneteltetett: 0, consentHezKotve: 0,
         /* A Google saját tagjei beépítetten consent-tudatosak – náluk a
            „nincs hozzájáruláshoz kötve" kérdés értelmetlen. */
-        beepitettConsent: GOOGLE_BEEPITETT_CONSENT.includes(t.type),
+        beepitettConsent: GOOGLE_PLATFORMOK.has(platform),
         consentNelkul: 0,
+        esemenyek: [],
       });
     }
-    const cel = celMap.get(kulcs);
-    cel.tagDb++;
-    if (t.paused) cel.szuneteltetett++;
-    if (t.consentTypes.length) cel.consentHezKotve++;
-    if (!cel.beepitettConsent && !t.paused && !t.consentTypes.length) cel.consentNelkul++;
+    return celMap.get(kulcs);
+  };
+
+  for (const t of tagInfos) {
+    const c = celrendszer(t);
+    if (!c) continue;
+    const esemenyek = tagEsemenyek(t);
+
+    /* Melyik célrendszerekhez tartozik ez a tag? Az elsődleges mellé bekerül
+       minden platform, amire a kódjában külön hívás van: egy vegyes egyéni
+       HTML tag (Meta + TikTok egy blokkban) eseményei így a saját kártyájukon
+       jelennek meg, nem mind az elsőn. */
+    const belepok = new Map();
+    belepok.set(c.platform, celEntry(c.platform, c.rendszer, c.azonosito));
+    for (const e of esemenyek) {
+      if (!e.platform || belepok.has(e.platform)) continue;
+      belepok.set(e.platform, celEntry(e.platform, platformAdat(e.platform).nev, ''));
+    }
+
+    for (const cel of belepok.values()) {
+      cel.tagDb++;
+      if (t.paused) cel.szuneteltetett++;
+      if (t.consentTypes.length) cel.consentHezKotve++;
+      if (!cel.beepitettConsent && !t.paused && !t.consentTypes.length) cel.consentNelkul++;
+    }
+
+    const trigger = t.firingTriggerNames.join(' • ') || 'nincs trigger';
+    for (const e of esemenyek) {
+      const cel = belepok.get(e.platform) || belepok.get(c.platform);
+      cel.esemenyek.push({
+        nev: e.nev,
+        trigger,
+        parameterek: e.parameterek || [],
+        szuneteltetett: t.paused,
+        consent: t.consentTypes.length ? t.consentTypes.join(', ') : null,
+      });
+    }
   }
-  const destinations = [...celMap.values()].sort((x, y) => y.tagDb - x.tagDb);
+
+  /* Az `fbq('init')` és az `fbq('track')` gyakran külön tagben van: az egyik
+     tagben ott a pixel azonosítója, a másikban csak az esemény. Ha egy
+     platformhoz pontosan EGY azonosított kártya tartozik, az azonosító
+     nélküli tagjei is oda valók. Ha több azonosító van, nem tippelünk. */
+  const celok = [...celMap.values()];
+  for (const nelkul of celok.filter((d) => !d.azonosito)) {
+    const jeloltek = celok.filter((d) => d !== nelkul && !d.beolvadt && d.platform === nelkul.platform && d.azonosito);
+    if (jeloltek.length !== 1) continue;
+    const cel = jeloltek[0];
+    cel.tagDb += nelkul.tagDb;
+    cel.szuneteltetett += nelkul.szuneteltetett;
+    cel.consentHezKotve += nelkul.consentHezKotve;
+    cel.consentNelkul += nelkul.consentNelkul;
+    cel.esemenyek.push(...nelkul.esemenyek);
+    nelkul.beolvadt = true;
+  }
+
+  const destinations = celok.filter((d) => !d.beolvadt).sort((x, y) => y.tagDb - x.tagDb);
+
+  /* Azonos esemény azonos triggerrel többször is szerepelhet (duplikált tag,
+     vagy ugyanaz a hívás több HTML tagben). Egyszer soroljuk fel, darabszámmal
+     — a duplikáció külön megállapítás, itt csak zajt csinálna. */
+  for (const d of destinations) {
+    const egyedi = new Map();
+    for (const e of d.esemenyek) {
+      const kulcs = e.nev + '|' + e.trigger;
+      const meglevo = egyedi.get(kulcs);
+      if (!meglevo) egyedi.set(kulcs, { ...e, db: 1 });
+      else {
+        meglevo.db++;
+        meglevo.szuneteltetett = meglevo.szuneteltetett && e.szuneteltetett;
+      }
+    }
+    d.esemenyek = [...egyedi.values()].sort((x, y) =>
+      Number(x.szuneteltetett) - Number(y.szuneteltetett)
+      || String(x.nev).localeCompare(String(y.nev), 'hu'));
+  }
 
   /* ---------------- Mit mér, és mikor? ----------------
      A konténerből visszafejthető a mérési terv: esemény → kiváltó feltétel →
@@ -10702,127 +11143,115 @@ function renderScanMetrics(m) {
 }
 
 /**
- * „Hova megy az adat" – folyamábra a konténerből a célrendszerekbe.
+ * „Hova megy az adat" – célrendszerenként egy kártya.
  *
- * MIÉRT NEM TÖLCSÉR: a tölcsér lépcsőzetes lemorzsolódást ábrázol (100 →
- * 60 → 20). Itt nincs lemorzsolódás: egy konténer oszlik szét sok cél
- * felé. A pontos forma az egy forrásból induló folyam.
+ * MIÉRT KÁRTYA, ÉS NEM FOLYAMÁBRA (v5.6–v5.8): a sávos ábra csak a
+ * nagyságrendet mutatta, hogy hány tag megy hova. A tényleges kérdés viszont
+ * az, hogy MIT küld a konténer az egyes platformokra — az pedig eseménynév és
+ * paraméter, nem sávvastagság. A kártya mindkettőt elbírja: fejlécben a
+ * platform és a fiókazonosító, alatta a ténylegesen kiküldött események,
+ * azokban lenyílóban a paraméterek.
  *
- * MIT KÓDOL:
- *  - a sáv VASTAGSÁGA: hány tag küld az adott rendszerbe (a szám ki is van írva,
- *    tehát a pontosság a szövegből jön, az ábra a nagyságrendet mutatja)
- *  - a sáv SZÍNE ÉS MINTÁZATA: a hozzájárulás állapota. A Google saját tagjei
- *    beépítetten consent-tudatosak (tele akcentus); a harmadik feles tagek
- *    consenthez kötött része tele, a kötetlen rész ferdén sávozva + figyelmeztető
- *    színnel. A sávozás azért kell, hogy ne csak a szín hordozza az információt
- *    (színtévesztés, nyomtatás, forced-colors).
- *  - a halvány, szaggatott sáv: minden tagje szünetel.
+ * MINDEN ADAT A KONTÉNERBŐL JÖN. Eseménynév, kiváltó feltétel és paraméter:
+ * beépített tagnél a tag paramétereiből, egyéni HTML tagnél a kódban lévő
+ * pixel-hívásból (lásd `kodEsemenyek`). Nincs becslés és nincs kiegészítés.
  *
- * Minden szöveg szöveg-tokent visel, nem a sáv színét.
+ * LOGÓ: lásd a PLATFORMOK regisztert. Amíg nincs benne SVG, monogram-jelvény
+ * látszik. A jelvény díszítés (`aria-hidden`), az információt a platform neve
+ * hordozza — a szín kiesésével sem vész el semmi.
  */
-function adatfolyamAbra(destinations, gtmIds) {
+function celrendszerKartyak(destinations, gtmIds) {
   const celok = (destinations || []).filter((d) => d.tagDb > 0);
   if (!celok.length) return '';
 
-  /* Nyolc fölött a maradékot összevonjuk: a sok vékony sáv olvashatatlan,
-     és a részletek úgyis ott vannak a táblázatban. */
-  const MAX_SOR = 8;
-  const fo = celok.slice(0, MAX_SOR);
-  const maradek = celok.slice(MAX_SOR);
-  const sorok = [...fo];
-  if (maradek.length) {
-    sorok.push({
-      rendszer: `Egyéb (${maradek.length} rendszer)`,
-      azonosito: null,
-      tagDb: maradek.reduce((n, d) => n + d.tagDb, 0),
-      szuneteltetett: maradek.reduce((n, d) => n + d.szuneteltetett, 0),
-      consentNelkul: maradek.reduce((n, d) => n + d.consentNelkul, 0),
-      beepitettConsent: false,
-      osszevont: true,
-    });
-  }
+  /* Sorrend: előbb ahova ténylegesen mennek események, aztán a csak betöltődő
+     szkriptek, végül a teljesen szüneteltetett célrendszerek. Azon belül
+     tagszám szerint — ami a legtöbb adatot kapja, az van elöl. */
+  const rang = (d) => (d.tagDb === d.szuneteltetett ? 2 : (d.esemenyek && d.esemenyek.length ? 0 : 1));
+  const rendezett = [...celok].sort((x, y) => rang(x) - rang(y) || y.tagDb - x.tagDb);
 
-  const PITCH = 30;              // sormagasság: a felirat így sosem ütközik
-  const MAX_VASTAG = 20;
-  const BAL = 190;               // a forrásdoboz szélessége
-  const HID = 130;               // a görbe vízszintes hossza
-  const CIMKE_X = BAL + HID + 14;
-  const SZELES = 720;
-  const TETEJE = 14;
-  const MAGAS = TETEJE * 2 + sorok.length * PITCH;
-  const maxTag = Math.max(...sorok.map((d) => d.tagDb));
-  // 6px az alsó határ: ez alatt a 2 pixeles elválasztó csík felemészti a sávot
-  const vastagsag = (d) => Math.max(6, Math.round((d.tagDb / maxTag) * MAX_VASTAG));
+  const esemenySor = (e) => {
+    const parameterek = e.parameterek || [];
+    const fej =
+      `<code class="cel-esemeny-nev">${esc(e.nev)}</code>` +
+      (e.db > 1 ? `<span class="cel-db">×${e.db}</span>` : '') +
+      (e.szuneteltetett ? '<span class="chip">szünetel</span>' : '');
+    const mikor = `<span class="cel-mikor">${esc(e.trigger)}</span>`;
 
-  const forrasKozep = MAGAS / 2;
-  const forrasMagas = Math.min(MAGAS - 28, sorok.reduce((n, d) => n + vastagsag(d), 0) + 10);
-
-  const sav = (d, i) => {
-    const y = TETEJE + i * PITCH + PITCH / 2;
-    const v = vastagsag(d);
-    const mindSzunetel = d.tagDb === d.szuneteltetett;
-    const kotetlen = d.consentNelkul || 0;
-    // A sáv két részre oszlik: hozzájáruláshoz kötött / kötetlen
-    const kotetlenArany = d.tagDb ? kotetlen / d.tagDb : 0;
-    const kotetlenV = Math.round(v * kotetlenArany);
-    const kotottV = v - kotetlenV;
-
-    const ut = (yTol, vastag) => {
-      const y0 = forrasKozep + yTol;
-      return `M ${BAL} ${y0 - vastag / 2}
-              C ${BAL + HID * 0.55} ${y0 - vastag / 2}, ${BAL + HID * 0.45} ${y - vastag / 2}, ${BAL + HID} ${y - vastag / 2}
-              L ${BAL + HID} ${y + vastag / 2}
-              C ${BAL + HID * 0.45} ${y + vastag / 2}, ${BAL + HID * 0.55} ${y0 + vastag / 2}, ${BAL} ${y0 + vastag / 2} Z`;
-    };
-    // a forrásnál egymás alá rendezzük a sávokat, hogy összeérjenek
-    const eltolas = sorok.slice(0, i).reduce((n, x) => n + vastagsag(x), 0)
-      - sorok.reduce((n, x) => n + vastagsag(x), 0) / 2 + v / 2;
-
-    const cimke = `${d.rendszer}${d.azonosito ? ' · ' + d.azonosito : ''}`;
-    const sugo = [
-      cimke,
-      `${d.tagDb} tag`,
-      d.szuneteltetett ? `${d.szuneteltetett} szünetel` : null,
-      d.beepitettConsent ? 'beépített hozzájárulás-kezelés (Google tag)'
-        : kotetlen ? `${kotetlen} tag nincs hozzájáruláshoz kötve` : 'hozzájáruláshoz kötve',
-    ].filter(Boolean).join(' · ');
-
+    if (!parameterek.length) {
+      return `<li class="cel-esemeny"><div class="cel-esemeny-fej">${fej}</div>${mikor}</li>`;
+    }
     return `
-      <g class="folyam-sor${mindSzunetel ? ' szunetel' : ''}">
-        <title>${esc(sugo)}</title>
-        ${kotottV > 0 ? `<path d="${ut(eltolas, kotottV)}" class="folyam-sav${d.beepitettConsent ? ' google' : ''}"/>` : ''}
-        ${kotetlenV > 0 ? `<path d="${ut(eltolas + (kotottV / 2) + (kotetlenV / 2) + 1, kotetlenV)}" class="folyam-sav kotetlen"/>` : ''}
-        <text x="${CIMKE_X}" y="${y - 1}" class="folyam-cimke">${esc(d.rendszer)}</text>
-        <text x="${CIMKE_X}" y="${y + 12}" class="folyam-meta">${d.tagDb} tag${d.azonosito ? ' · ' + esc(d.azonosito) : ''}${
-          mindSzunetel ? ' · mind szünetel' : kotetlen ? ` · ${kotetlen} consent nélkül` : ''}</text>
-      </g>`;
+        <li class="cel-esemeny">
+          <details>
+            <summary>
+              <div class="cel-esemeny-fej">${fej}<span class="cel-param-db">${parameterek.length} paraméter</span></div>
+              ${mikor}
+            </summary>
+            <table class="cel-param">
+              <tbody>
+                ${parameterek.map((p) => `
+                  <tr>
+                    <th scope="row">${esc(p.nev)}</th>
+                    <td>${p.ertek ? `<code>${esc(p.ertek)}</code>` : '<span class="cel-halvany">—</span>'}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </details>
+        </li>`;
   };
 
+  const kartya = (d) => {
+    const pf = platformAdat(d.platform);
+    const mindSzunetel = d.tagDb === d.szuneteltetett;
+    const esemenyek = d.esemenyek || [];
+
+    /* A jelzések nem csak színnel különböztetnek: mindegyikben ott a szöveg is. */
+    const jelzesek = [];
+    if (mindSzunetel) jelzesek.push('<span class="chip">mind szünetel</span>');
+    else if (d.szuneteltetett) jelzesek.push(`<span class="chip">${d.szuneteltetett} szünetel</span>`);
+    if (d.beepitettConsent) {
+      jelzesek.push('<span class="chip ok" title="A Google saját tagjei maguktól figyelik az analytics_storage / ad_storage állapotot – rájuk a GTM-ben nem is lehet további ellenőrzést beállítani">beépített consent</span>');
+    } else if (d.consentNelkul) {
+      jelzesek.push(`<span class="chip warning">${d.consentNelkul} tag hozzájárulás nélkül futhat</span>`);
+    } else if (d.consentHezKotve) {
+      jelzesek.push('<span class="chip ok">hozzájáruláshoz kötve</span>');
+    }
+
+    const uresSzoveg = d.platform === 'egyeb'
+      ? 'Ezekből a tagekből nem derül ki, hova küldenek – kézzel kell átnézni őket.'
+      : 'Nevesített esemény nem megy ide; a tag jellemzően csak betölti a szkriptet.';
+
+    return `
+      <article class="cel-kartya${mindSzunetel ? ' szunetel' : ''}">
+        <header class="cel-fej">
+          <span class="cel-jel${pf.svg ? ' logos' : ''}" aria-hidden="true"${
+            pf.svg ? '' : ` style="background:${pf.szin};color:${jelvenySzoveg(pf.szin)}"`}>${
+            pf.svg || esc(pf.monogram)}</span>
+          <div class="cel-fej-szoveg">
+            <div class="cel-nev">${esc(d.rendszer)}</div>
+            <div class="cel-az">${d.azonosito
+              ? `<code>${esc(d.azonosito)}</code>`
+              : '<span class="cel-halvany">azonosító nélkül</span>'}</div>
+          </div>
+        </header>
+        <div class="cel-szamok"><b>${d.tagDb}</b> tag${
+          esemenyek.length ? ` · <b>${esemenyek.length}</b> esemény` : ''}</div>
+        ${jelzesek.length ? `<div class="cel-jelzesek">${jelzesek.join('')}</div>` : ''}
+        ${esemenyek.length
+          ? `<ul class="cel-esemenyek">${esemenyek.map(esemenySor).join('')}</ul>`
+          : `<p class="cel-ures">${uresSzoveg}</p>`}
+      </article>`;
+  };
+
+  const forras = (gtmIds || []).join(', ');
   return `
-  <figure class="folyam" style="margin:0 0 6px">
-    <svg viewBox="0 0 ${SZELES} ${MAGAS}" width="100%" height="${MAGAS}" role="img"
-         aria-label="A GTM konténerből ${sorok.length} célrendszerbe megy adat. A részletes számok a lenti táblázatban.">
-      <defs>
-        <pattern id="folyamSav" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <rect width="6" height="6" class="folyam-sav-hatter"/>
-          <line x1="0" y1="0" x2="0" y2="6" class="folyam-sav-vonal"/>
-        </pattern>
-      </defs>
-
-      <rect x="0" y="${forrasKozep - forrasMagas / 2}" width="${BAL - 8}" height="${forrasMagas}"
-            rx="10" class="folyam-forras"/>
-      <text x="${(BAL - 8) / 2}" y="${forrasKozep - 6}" text-anchor="middle" class="folyam-forras-cim">GTM konténer</text>
-      <text x="${(BAL - 8) / 2}" y="${forrasKozep + 12}" text-anchor="middle" class="folyam-forras-meta">${esc((gtmIds || []).join(', ') || 'a vizsgált oldalon')}</text>
-
-      ${sorok.map(sav).join('')}
-    </svg>
-    <figcaption class="folyam-jelmagyarazat">
-      <span><i class="jel jel-google"></i>Google tag – beépített hozzájárulás-kezelés</span>
-      <span><i class="jel jel-kotott"></i>harmadik fél, hozzájáruláshoz kötve</span>
-      <span><i class="jel jel-kotetlen"></i>harmadik fél, <b>hozzájárulás nélkül futhat</b></span>
-      <span><i class="jel jel-szunetel"></i>mind szünetel</span>
-    </figcaption>
-  </figure>`;
+    <div class="cel-racs">${rendezett.map(kartya).join('')}</div>
+    <p class="cel-labjegyzet">
+      ${rendezett.length} célrendszer, ${rendezett.reduce((n, d) => n + (d.esemenyek ? d.esemenyek.length : 0), 0)}
+      esemény – mind a ${forras ? esc(forras) + ' konténer' : 'vizsgált konténer'} tagjeiből, triggereiből és
+      paramétereiből. Az eseménynévre kattintva látszik, milyen paraméterek mennek át.
+    </p>`;
 }
 
 /* --------------------- GTM konténer-elemző ------------------------- */
@@ -10929,28 +11358,34 @@ function renderGtmSection(run) {
         <span title="Ezek nem hibák, csak rendetlenség – ezért nem kerülnek a megállapítások közé">ⓘ</span>
       </p>
 
-      <!-- 1. kérdés egy idegen konténernél: hova megy innen az adat? -->
+      <!-- 1. kérdés egy idegen konténernél: hova megy innen az adat, és mi? -->
       ${(a.destinations || []).length ? `
-      <h3 style="font-size:15px;margin:22px 0 8px">Hova megy innen az adat?</h3>
-      ${adatfolyamAbra(a.destinations, run.detection?.google?.gtmIds)}
-      <div class="tablewrap" style="border:1px solid var(--border);border-radius:var(--radius)">
-        <table class="data">
-          <thead><tr><th>Célrendszer</th><th>Azonosító</th><th style="text-align:right">Tag</th><th style="text-align:right">Consenthez kötve</th></tr></thead>
-          <tbody>
-            ${a.destinations.map((d2) => `
-              <tr${d2.tagDb === d2.szuneteltetett ? ' style="opacity:.5"' : ''}>
-                <td style="font-weight:540">${esc(d2.rendszer)}${d2.tagDb === d2.szuneteltetett ? ' <span class="chip">mind szünetel</span>' : ''}</td>
-                <td>${d2.azonosito ? `<code style="font-size:12px">${esc(d2.azonosito)}</code>` : '<span style="color:var(--text-faint)">—</span>'}</td>
-                <td style="text-align:right">${d2.tagDb}${d2.szuneteltetett ? ` <span style="color:var(--text-faint);font-size:12px">(${d2.szuneteltetett} szünetel)</span>` : ''}</td>
-                <td style="text-align:right;color:var(--text-dim)">${d2.consentHezKotve} / ${d2.tagDb}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-      <p style="color:var(--text-dim);font-size:12.8px;margin:8px 0 0">
-        Ha ebben a listában olyan fiókazonosítót látsz, amit nem ismersz fel, az jellemzően egy korábbi
-        ügynökség vagy egy elfelejtett property — és még mindig kap adatot.
-      </p>` : ''}
+      <h3 style="font-size:15px;margin:22px 0 4px">Hova megy innen az adat?</h3>
+      <p style="color:var(--text-dim);font-size:13.2px;margin:0 0 12px">
+        Platformonként: melyik fiókba megy az adat, milyen eseményekkel, és azokban milyen paraméterekkel.
+        Minden sor a konténer tagjeiből, triggereiből és paramétereiből jön — az egyéni HTML tagek pixel-hívásait
+        is beleértve. Ha olyan fiókazonosítót látsz, amit nem ismersz fel, az jellemzően egy korábbi ügynökség
+        vagy egy elfelejtett property — és még mindig kap adatot.
+      </p>
+      ${celrendszerKartyak(a.destinations, run.detection?.google?.gtmIds)}
+      <details style="margin-top:12px">
+        <summary style="cursor:pointer;font-size:13.6px;color:var(--accent)">Összes célrendszer egy táblázatban (${a.destinations.length})</summary>
+        <div class="tablewrap" style="margin-top:10px;border:1px solid var(--border);border-radius:var(--radius)">
+          <table class="data">
+            <thead><tr><th>Célrendszer</th><th>Azonosító</th><th style="text-align:right">Tag</th><th style="text-align:right">Esemény</th><th style="text-align:right">Consenthez kötve</th></tr></thead>
+            <tbody>
+              ${a.destinations.map((d2) => `
+                <tr${d2.tagDb === d2.szuneteltetett ? ' style="opacity:.5"' : ''}>
+                  <td style="font-weight:540">${esc(d2.rendszer)}${d2.tagDb === d2.szuneteltetett ? ' <span class="chip">mind szünetel</span>' : ''}</td>
+                  <td>${d2.azonosito ? `<code style="font-size:12px">${esc(d2.azonosito)}</code>` : '<span style="color:var(--text-faint)">—</span>'}</td>
+                  <td style="text-align:right">${d2.tagDb}${d2.szuneteltetett ? ` <span style="color:var(--text-faint);font-size:12px">(${d2.szuneteltetett} szünetel)</span>` : ''}</td>
+                  <td style="text-align:right;color:var(--text-dim)">${(d2.esemenyek || []).length || '—'}</td>
+                  <td style="text-align:right;color:var(--text-dim)">${d2.consentHezKotve} / ${d2.tagDb}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </details>` : ''}
 
       <!-- 2. kérdés: mit mér, és mikor? A konténerből visszafejtett mérési terv. -->
       ${(a.eventMap || []).length ? `
