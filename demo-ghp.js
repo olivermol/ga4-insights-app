@@ -1524,7 +1524,9 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
 
   /* A letöltött index.html-be kerülő, demótól független kód. Szövegként (Function.prototype.toString) kerül át. */
   function ga4SavedImport() {
-    /* Az app mentett adatainak betöltése az első megnyitáskor (egyszer) */
+    /* Az app mentett beállításainak betöltése az első megnyitáskor (egyszer).
+       Az elemzések nem itt kerülnek be, hanem az app betöltése után (ga4SavedImportFallback),
+       az app saját tárolóján keresztül – a localStorage-ba nem férnének el. */
     var el = document.getElementById('ga4-import-data');
     var data = null;
     try { data = JSON.parse(el.textContent); } catch (e) { return; }
@@ -1532,15 +1534,6 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
     var flag = 'ga4insights.import.' + data.exportId;
     function merge(get, set) {
       if (get(flag)) return;
-      if (Array.isArray(data.runs) && data.runs.length) {
-        var cur = [];
-        try { cur = JSON.parse(get('ga4insights.runs') || '[]'); } catch (e) { cur = []; }
-        if (!Array.isArray(cur)) cur = [];
-        var seen = {};
-        cur.forEach(function (r) { if (r && r.id) seen[r.id] = true; });
-        var add = data.runs.filter(function (r) { return r && r.id && !seen[r.id]; });
-        if (add.length) set('ga4insights.runs', JSON.stringify(cur.concat(add).slice(0, 25)));
-      }
       if (data.settings && typeof data.settings === 'object') {
         var s = null;
         try { s = JSON.parse(get('ga4insights.settings') || 'null'); } catch (e) { s = null; }
@@ -1571,22 +1564,38 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
   }
 
   function ga4SavedImportFallback() {
+    /* 1) Beállítások: ha a localStorage nem engedte, az app betöltése után a memóriába kerülnek */
     var merge = window.ga4SavedImportMerge;
-    if (typeof merge !== 'function') return;
-    try {
-      merge(function (k) { return storage.get(k); }, function (k, v) { storage.set(k, v); });
-      settings = loadSettings();
-      if (typeof Fetcher === 'object' && Fetcher && typeof Fetcher.setCustomProxy === 'function') Fetcher.setCustomProxy(settings.customProxy);
-      var refresh = function () {
-        if (typeof renderClientBar === 'function') renderClientBar();
-        if (typeof renderApiKeyWarning === 'function') renderApiKeyWarning();
-      };
-      if (typeof api === 'function' && typeof state === 'object' && state) {
-        Promise.resolve(api('/api/config')).then(function (c) { state.config = c; refresh(); }, refresh);
-      } else {
-        refresh();
-      }
-    } catch (e) { /* az app nem érhető el */ }
+    if (typeof merge === 'function') {
+      try {
+        merge(function (k) { return storage.get(k); }, function (k, v) { storage.set(k, v); });
+        settings = loadSettings();
+        if (typeof Fetcher === 'object' && Fetcher && typeof Fetcher.setCustomProxy === 'function') Fetcher.setCustomProxy(settings.customProxy);
+        var refresh = function () {
+          if (typeof renderClientBar === 'function') renderClientBar();
+          if (typeof renderApiKeyWarning === 'function') renderApiKeyWarning();
+        };
+        if (typeof api === 'function' && typeof state === 'object' && state) {
+          Promise.resolve(api('/api/config')).then(function (c) { state.config = c; refresh(); }, refresh);
+        } else {
+          refresh();
+        }
+      } catch (e) { /* az app nem érhető el */ }
+    }
+
+    /* 2) Elemzések: az app saját tárolójába (IndexedDB), darabszám-korlát nélkül, egyszer.
+       Meglévő elemzést nem ír felül; ha valamelyik nem fért el, a következő megnyitáskor újra próbálja. */
+    var data = null;
+    try { data = JSON.parse(document.getElementById('ga4-import-data').textContent); } catch (e) { return; }
+    if (!data || !data.exportId || !Array.isArray(data.runs) || !data.runs.length) return;
+    if (typeof RunStore !== 'object' || !RunStore || typeof storage !== 'object' || !storage) return;
+    var flag = 'ga4insights.import.' + data.exportId + '.runs';
+    if (storage.get(flag)) return;
+    RunStore.importRuns(data.runs).then(function (res) {
+      if (!res.failed) storage.set(flag, new Date().toISOString());
+      var hist = document.getElementById('view-history');
+      if (res.added && hist && !hist.classList.contains('hidden') && typeof loadHistory === 'function') loadHistory();
+    }, function () { /* a következő megnyitáskor újra */ });
   }
 
   function ga4GuideSetup() {
@@ -1692,15 +1701,20 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
     return out;
   }
 
-  /* Tárolt adatok – a demó elemzés és az AI kulcs nélkül */
+  /* Tárolt adatok – a demó elemzés és az AI kulcs nélkül. Ígéretet ad vissza (az elemzések IndexedDB-ből jönnek). */
   function collectUserData() {
-    function get(k) {
-      var v = safe(function () { return (typeof storage === 'object' && storage && typeof storage.get === 'function') ? storage.get(k) : localStorage.getItem(k); });
-      return v == null ? null : v;
-    }
-    var runs = safe(function () { return JSON.parse(get(RUNS_KEY) || '[]'); });
+    var runsP = hasRunStore()
+      ? RunStore.all()
+      : Promise.resolve(safe(function () { return JSON.parse(readStored(RUNS_KEY) || '[]'); }));
+    return runsP.then(null, function () { return []; }).then(function (runs) { return userDataJson(runs); });
+  }
+  function readStored(k) {
+    var v = safe(function () { return (typeof storage === 'object' && storage && typeof storage.get === 'function') ? storage.get(k) : localStorage.getItem(k); });
+    return v == null ? null : v;
+  }
+  function userDataJson(runs) {
     runs = Array.isArray(runs) ? runs.filter(function (r) { return r && r.id && r.id !== DEMO_ID && r.demo !== true; }) : [];
-    var settings = safe(function () { return JSON.parse(get('ga4insights.settings') || 'null'); });
+    var settings = safe(function () { return JSON.parse(readStored('ga4insights.settings') || 'null'); });
     var apiKey = '';
     if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
       apiKey = typeof settings.apiKey === 'string' ? settings.apiKey.trim() : '';
@@ -1708,7 +1722,7 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
     } else {
       settings = null;
     }
-    var theme = get('theme');
+    var theme = readStored('theme');
     if (theme !== 'light' && theme !== 'dark') theme = null;
     if (!runs.length && !settings && !theme) return null;
     var data = { exportId: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), exportedAt: new Date().toISOString() };
@@ -1854,12 +1868,13 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
       var pageUrl = location.href.split('#')[0];
       Promise.all([
         fetch(pageUrl, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('fetch'); return r.arrayBuffer(); }),
-        fetch(new URL('kezelesi-utmutato-ghp.html', pageUrl).href, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('fetch'); return r.text(); })
+        fetch(new URL('kezelesi-utmutato-ghp.html', pageUrl).href, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('fetch'); return r.text(); }),
+        collectUserData()
       ]).then(function (res) {
         var zip;
         try {
           zip = makeZip([
-            { name: 'ga4-insights-app/index.html', data: buildIndex(res[0], collectUserData()) },
+            { name: 'ga4-insights-app/index.html', data: buildIndex(res[0], res[2]) },
             { name: 'ga4-insights-app/kezelesi-utmutato-ghp.html', data: buildGuide(res[1]) }
           ]);
         } catch (e) {
@@ -1907,18 +1922,36 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
     return true;
   }
 
-  var hasOtherRuns = false;
-  safe(function () {
-    var raw = readRaw();
-    var runs = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(runs)) return; // ismeretlen formátum: nem írjuk felül
-    hasOtherRuns = runs.some(function (r) { return r && r.id !== DEMO_ID; });
-    var hasDemo = runs.some(function (r) { return r && r.id === DEMO_ID; });
-    if (!hasDemo && DEMO_RUN && DEMO_RUN.id === DEMO_ID) {
-      runs.unshift(DEMO_RUN);
-      writeRaw(JSON.stringify(runs));
+  /* Az app az elemzéseket a saját tárolójában (RunStore, IndexedDB) tartja.
+     A régi kulcsot csak akkor használjuk, ha az app régebbi, RunStore nélküli. */
+  function hasRunStore() {
+    return typeof RunStore === 'object' && RunStore !== null && typeof RunStore.list === 'function';
+  }
+
+  /** A demó elemzés beírása, ha még nincs. Az ígéret értéke: van-e a látogatónak saját elemzése. */
+  function addDemoRun() {
+    var canAdd = DEMO_RUN && DEMO_RUN.id === DEMO_ID;
+    if (hasRunStore()) {
+      return RunStore.list().then(function (rows) {
+        var hasOther = rows.some(function (r) { return r && r.id !== DEMO_ID; });
+        var hasDemo = rows.some(function (r) { return r && r.id === DEMO_ID; });
+        if (hasDemo || !canAdd) return hasOther;
+        return RunStore.put(DEMO_RUN).then(function () { return hasOther; });
+      });
     }
-  });
+    return Promise.resolve(safe(function () {
+      var raw = readRaw();
+      var runs = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(runs)) return true; // ismeretlen formátum: nem írjuk felül, és nem is nyitjuk meg
+      var hasOther = runs.some(function (r) { return r && r.id !== DEMO_ID; });
+      var hasDemo = runs.some(function (r) { return r && r.id === DEMO_ID; });
+      if (!hasDemo && canAdd) {
+        runs.unshift(DEMO_RUN);
+        writeRaw(JSON.stringify(runs));
+      }
+      return hasOther;
+    }));
+  }
 
   /* 3) Megnyitás – ugyanúgy, mint az Előzmények listában egy sorra kattintás */
   function openDemo() {
@@ -1935,10 +1968,13 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
       }).catch(function () { /* nincs demó – nem baj */ });
     });
   }
-  if (!hasOtherRuns) {
-    if (document.readyState === 'complete') setTimeout(openDemo, 0);
-    else window.addEventListener('load', function () { setTimeout(openDemo, 0); });
-  }
+  safe(function () {
+    addDemoRun().then(function (hasOtherRuns) {
+      if (hasOtherRuns) return;
+      if (document.readyState === 'complete') setTimeout(openDemo, 0);
+      else window.addEventListener('load', function () { setTimeout(openDemo, 0); });
+    }, function () { /* a tároló nem érhető el – a demó nélkül is működik az app */ });
+  });
 
   /* 4) Címkék: a demó elemzés és az előre generált AI rész jól láthatóan jelölve */
   function chip(text, title) {

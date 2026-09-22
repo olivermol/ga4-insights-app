@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GA4 Insights v5.7 – mérési és marketing audit</title>
+<title>GA4 Insights v5.8 – mérési és marketing audit</title>
 <meta name="description" content="Egyfájlos mérési (GA4/GTM/Meta) és online marketing audit eszköz, Things 3 exporttal.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📊</text></svg>">
 <style>
@@ -725,7 +725,7 @@ dialog footer { padding: 13px 18px; border-top: 1px solid var(--border); display
 <div class="app">
 
   <header class="masthead">
-    <div class="logo"><span class="dot"></span> GA4 Insights <span class="chip" id="appVersion" title="Alkalmazás verziója">v5.7</span></div>
+    <div class="logo"><span class="dot"></span> GA4 Insights <span class="chip" id="appVersion" title="Alkalmazás verziója">v5.8</span></div>
     <div class="spacer"></div>
     <nav>
       <button class="ghost-btn active" data-view="analyze">Elemzés</button>
@@ -3358,7 +3358,7 @@ const { conversionRules } = __RulesConv;
 
 
 /** Az alkalmazás verziója – a riport fejlécében és az exportban is megjelenik. */
-const APP_VERSION = 'v5.7';
+const APP_VERSION = 'v5.8';
 
 /**
  * A Consent Mode állapota egy mondatban – a felület, a Markdown export és az
@@ -11965,9 +11965,9 @@ async function loadHistory() {
         <button class="btn secondary small" data-exportall="json">JSON</button>`;
       bar.classList.remove('hidden');
       bar.querySelectorAll('[data-exportall]').forEach((b) =>
-        b.addEventListener('click', () => {
+        b.addEventListener('click', async () => {
           try {
-            exportAllRuns(b.dataset.exportall);
+            await exportAllRuns(b.dataset.exportall);
           } catch (err) {
             toast('Export hiba: ' + err.message, 4000);
           }
@@ -12007,7 +12007,7 @@ async function loadHistory() {
 
      api(path, opts)   – a felület műveletei, helyben számolva
      abortCurrent()    – a futó folyamat leállítása (Stop gomb)
-     tárolás           – localStorage
+     tárolás           – elemzések: IndexedDB, beállítások: localStorage
      exportok          – Blob letöltés, futásonként és tömegesen
      PDF               – nyomtatási réteg az oldalon belül
      Beállítások       – AI szolgáltató, kulcs, modell, Things Area,
@@ -12040,23 +12040,34 @@ const storageWorks = (() => {
   }
 })();
 
+/* A memóriában csak az van, ami nem került ki a localStorage-ba – és az az
+   újabb, ezért olvasáskor az elsőbbséget kap. (Korábban fordítva volt: ha egy
+   mentés nem fért el, a következő olvasás a régi, tartós értéket adta vissza.) */
 const storage = {
   get(key) {
+    if (memFallback.has(key)) return memFallback.get(key);
     try {
-      const v = localStorage.getItem(key);
-      if (v !== null) return v;
+      return localStorage.getItem(key);
     } catch {
-      /* nem elérhető */
+      return null; // nem elérhető
     }
-    return memFallback.has(key) ? memFallback.get(key) : null;
   },
   set(key, value) {
-    memFallback.set(key, value);
     try {
       localStorage.setItem(key, value);
+      memFallback.delete(key);
       return true;
     } catch {
-      return false; // pl. betelt a kvóta
+      memFallback.set(key, value); // pl. betelt a kvóta
+      return false;
+    }
+  },
+  remove(key) {
+    memFallback.delete(key);
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* nem elérhető */
     }
   },
 };
@@ -12139,43 +12150,295 @@ Fetcher.setCustomProxy(settings.customProxy);
 
 /* ------------------------------------------------------------------ *
  * Elemzések tárolása
+ *
+ * Az elemzések IndexedDB-ben vannak. Korábban a localStorage-ban voltak,
+ * annak a kerete viszont originenként kb. 5 MB: mély vizsgálattal, AI
+ * résszel és GTM konténerrel egy elemzés 300–400 KB, így nagyjából 13 fért
+ * el, és utána minden új mentés csendben törölte a legrégebbit. Az IndexedDB
+ * kerete a szabad lemezterület töredéke – ez gyakorlatilag nem korlát.
+ *
+ * Ha az IndexedDB nem érhető el (pl. Safari, fájlból megnyitva), a
+ * localStorage, végső esetben a memória marad.
+ *
+ * Mentett elemzést az app magától soha nem töröl. Ha egy mentés nem fér el,
+ * az elemzés a lap bezárásáig megmarad, és szólunk, hogy exportáld.
  * ------------------------------------------------------------------ */
 
-const MAX_RUNS = 25;
-
-function loadRuns() {
-  try {
-    const arr = JSON.parse(storage.get(RUNS_KEY) || '[]');
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
+/** Az Előzmények lista egy sora – ehhez nem kell a teljes elemzést betölteni. */
+function runSummary(r) {
+  return {
+    id: r.id,
+    url: r.site?.finalUrl || r.requestedUrl,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt || r.createdAt,
+    status: r.status || 'ok',
+    error: r.error?.message || null,
+    score: r.rules?.score?.overall ?? null,
+    grade: r.rules?.score?.grade ?? null,
+    hasDeepAudit: Boolean(r.deepAudit),
+    hasMarketing: Boolean(r.marketing),
+    hasDeepScan: Boolean(r.deepScan),
+    counts: r.rules?.score?.counts ?? null,
+  };
 }
 
-function persistRuns(runs) {
-  // Ha nem fér ki, a legrégebbieket dobjuk el, amíg belefér
-  let list = runs.slice(0, MAX_RUNS);
-  while (list.length) {
-    if (storage.set(RUNS_KEY, JSON.stringify(list))) return list.length < runs.length;
-    list = list.slice(0, list.length - 1);
-  }
-  storage.set(RUNS_KEY, '[]');
-  return true;
-}
+/** Legutóbb mentett elöl – ahogy eddig is. Azonos időnél az azonosító dönt (az is időbélyeggel kezdődik). */
+const byNewest = (a, b) =>
+  String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')) ||
+  String(b.id).localeCompare(String(a.id));
 
-function saveRun(run) {
+const RunStore = (() => {
+  const DB_NAME = 'ga4insights';
+  const RUNS = 'runs';   // { id, json } – a teljes elemzés JSON szövegként, pont úgy, mint eddig
+  const INDEX = 'index'; // runSummary() sorok az Előzmények listához
+
+  let db = null;
+  let mode = 'memory';   // 'idb' | 'local' | 'memory'
+
+  /* Ami még nem (vagy nem) került ki tartós tárba: id → { json, summary }.
+     Az olvasás ezt nézi először, így a mentés után azonnal visszaolvasható,
+     és ha a tárhely betelt, a lap bezárásáig innen érhető el. */
+  const session = new Map();
+
+  function openDb() {
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === 'undefined' || !indexedDB) return reject(new Error('nincs IndexedDB'));
+      // Néhány böngésző (régi Safari, privát mód) válasz nélkül hagyja a kérést
+      const timer = setTimeout(() => reject(new Error('az IndexedDB nem válaszol')), 5000);
+      let req;
+      try {
+        req = indexedDB.open(DB_NAME, 1);
+      } catch (err) {
+        clearTimeout(timer);
+        return reject(err);
+      }
+      req.onupgradeneeded = () => {
+        const d = req.result;
+        if (!d.objectStoreNames.contains(RUNS)) d.createObjectStore(RUNS, { keyPath: 'id' });
+        if (!d.objectStoreNames.contains(INDEX)) d.createObjectStore(INDEX, { keyPath: 'id' });
+      };
+      req.onsuccess = () => {
+        clearTimeout(timer);
+        const d = req.result;
+        d.onversionchange = () => d.close();
+        resolve(d);
+      };
+      req.onerror = () => {
+        clearTimeout(timer);
+        reject(req.error);
+      };
+    });
+  }
+
+  /** Egy tranzakció ígéretként: a `fill` a store-okon dolgozik, a tranzakció végén teljesül. */
+  async function tx(storeNames, access, fill) {
+    let t;
+    try {
+      t = db.transaction(storeNames, access);
+    } catch {
+      // A kapcsolat bezárult (pl. Safari hosszan háttérben lévő lapnál): egyszer újranyitjuk
+      db = await openDb();
+      t = db.transaction(storeNames, access);
+    }
+    return new Promise((resolve, reject) => {
+      t.oncomplete = () => resolve();
+      t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error || new Error('a tranzakció megszakadt'));
+      fill(...storeNames.map((n) => t.objectStore(n)));
+    });
+  }
+
+  const readLegacy = () => {
+    try {
+      const arr = JSON.parse(storage.get(RUNS_KEY) || '[]');
+      return Array.isArray(arr) ? arr.filter((r) => r && r.id) : [];
+    } catch {
+      return [];
+    }
+  };
+  const writeLegacy = (list) => storage.set(RUNS_KEY, JSON.stringify(list));
+
+  /**
+   * A localStorage-ban lévő elemzések átköltöztetése az IndexedDB-be.
+   * Minden induláskor lefut, mert oda régebbi változat vagy import is írhat.
+   * Ami már bent van, azt csak akkor írja felül, ha a localStorage-beli újabb.
+   * A régi kulcs csak sikeres átírás után törlődik.
+   */
+  async function migrateLegacy() {
+    const legacy = readLegacy();
+    if (legacy.length) {
+      await tx([RUNS, INDEX], 'readwrite', (runs, index) => {
+        index.getAll().onsuccess = (e) => {
+          const have = new Map(e.target.result.map((s) => [s.id, s.updatedAt || '']));
+          for (const r of legacy) {
+            const summary = runSummary(r);
+            if (have.has(r.id) && have.get(r.id) >= summary.updatedAt) continue;
+            runs.put({ id: r.id, json: JSON.stringify(r) });
+            index.put(summary);
+            have.set(r.id, summary.updatedAt);
+          }
+        };
+      });
+    }
+    if (storage.get(RUNS_KEY) !== null) storage.remove(RUNS_KEY);
+  }
+
+  const ready = (async () => {
+    try {
+      db = await openDb();
+    } catch {
+      mode = storageWorks ? 'local' : 'memory';
+      return;
+    }
+    try {
+      await migrateLegacy();
+      mode = 'idb';
+    } catch {
+      // Ha az átköltözés nem sikerül, ebben a munkamenetben marad a régi tárolás
+      db.close();
+      db = null;
+      mode = storageWorks ? 'local' : 'memory';
+    }
+  })();
+
+  const parse = (json) => JSON.parse(json);
+
+  const store = {
+    ready,
+    /** 'idb' | 'local' | 'memory' – a `ready` után érvényes. */
+    mode: () => mode,
+
+    /** Mentés. true, ha tartósan megvan; false, ha csak a lap bezárásáig. Nem dob. */
+    async put(run) {
+      let json;
+      try {
+        json = JSON.stringify(run);
+      } catch {
+        return false;
+      }
+      const entry = { json, summary: runSummary(run) };
+      session.set(run.id, entry);
+      await ready;
+      try {
+        if (mode === 'idb') {
+          await tx([RUNS, INDEX], 'readwrite', (runs, index) => {
+            runs.put({ id: run.id, json });
+            index.put(entry.summary);
+          });
+        } else if (mode === 'local') {
+          // Nem fér el? A memóriában (storage) marad – a régieket nem dobjuk el
+          const list = readLegacy().filter((r) => r.id !== run.id);
+          list.unshift(run);
+          if (!writeLegacy(list)) return false;
+        } else {
+          return false;
+        }
+      } catch {
+        return false; // pl. betelt a lemez: a session-ben megmarad
+      }
+      if (session.get(run.id) === entry) session.delete(run.id);
+      return true;
+    },
+
+    /** A teljes elemzés, vagy null. */
+    async get(id) {
+      if (session.has(id)) return parse(session.get(id).json);
+      await ready;
+      if (session.has(id)) return parse(session.get(id).json);
+      if (mode === 'idb') {
+        let row;
+        await tx([RUNS], 'readonly', (runs) => {
+          runs.get(id).onsuccess = (e) => (row = e.target.result);
+        });
+        return row ? parse(row.json) : null;
+      }
+      return readLegacy().find((r) => r.id === id) || null;
+    },
+
+    /** Az Előzmények lista sorai, legutóbb mentett elöl. */
+    async list() {
+      await ready;
+      let rows = [];
+      if (mode === 'idb') {
+        await tx([INDEX], 'readonly', (index) => {
+          index.getAll().onsuccess = (e) => (rows = e.target.result);
+        });
+      } else {
+        rows = readLegacy().map(runSummary);
+      }
+      const byId = new Map(rows.map((s) => [s.id, s]));
+      for (const [id, entry] of session) byId.set(id, entry.summary);
+      return [...byId.values()].sort(byNewest);
+    },
+
+    /** Az összes teljes elemzés (tömeges exporthoz), legutóbb mentett elöl. */
+    async all() {
+      await ready;
+      let runs = [];
+      if (mode === 'idb') {
+        let rows = [];
+        await tx([RUNS], 'readonly', (runStore) => {
+          runStore.getAll().onsuccess = (e) => (rows = e.target.result);
+        });
+        runs = rows.map((row) => parse(row.json));
+      } else {
+        runs = readLegacy();
+      }
+      const byId = new Map(runs.map((r) => [r.id, r]));
+      for (const [id, entry] of session) byId.set(id, parse(entry.json));
+      return [...byId.values()].sort(byNewest);
+    },
+
+    async remove(id) {
+      session.delete(id);
+      await ready;
+      if (mode === 'idb') {
+        await tx([RUNS, INDEX], 'readwrite', (runs, index) => {
+          runs.delete(id);
+          index.delete(id);
+        });
+      } else {
+        writeLegacy(readLegacy().filter((r) => r.id !== id));
+      }
+    },
+
+    /**
+     * Elemzések hozzáadása kívülről (pl. importból). Meglévőt nem ír felül.
+     * { added: hozzáadva, failed: ebből csak a lap bezárásáig van meg }
+     */
+    async importRuns(list) {
+      const have = new Set((await store.list()).map((s) => s.id));
+      let added = 0;
+      let failed = 0;
+      for (const r of Array.isArray(list) ? list : []) {
+        if (!r || !r.id || have.has(r.id)) continue;
+        have.add(r.id);
+        added++;
+        if (!(await store.put(r))) failed++;
+      }
+      return { added, failed };
+    },
+  };
+  return store;
+})();
+
+async function saveRun(run) {
   run.updatedAt = new Date().toISOString();
-  const runs = loadRuns().filter((r) => r.id !== run.id);
-  runs.unshift(run);
-  if (persistRuns(runs)) {
-    toast('A böngésző tárhelye betelt – a legrégebbi elemzések törlődtek. Fontosat exportálj le.', 6000);
+  const persisted = await RunStore.put(run);
+  // Memória módban erről már az induláskori sáv szól, ott nem ismételjük
+  if (!persisted && RunStore.mode() !== 'memory') {
+    toast(
+      'Ez az elemzés nem fért el a böngésző tárhelyén: a lap bezárásáig megvan, utána elvész. ' +
+        'Exportáld, vagy törölj régebbieket az Előzmények közül. Korábbi elemzés nem törlődött.',
+      9000
+    );
   }
   return run;
 }
 
-function getRun(id) {
-  const run = loadRuns().find((r) => r.id === id);
-  if (!run) throw new Error('Nincs ilyen mentett elemzés (lehet, hogy törlődött a tárhely miatt).');
+async function getRun(id) {
+  const run = await RunStore.get(id);
+  if (!run) throw new Error('Nincs ilyen mentett elemzés – lehet, hogy törölted az Előzmények közül.');
   return run;
 }
 
@@ -12358,7 +12621,7 @@ async function api(path, opts = {}) {
         deepScan: null,
       });
     } catch (err) {
-      saveRun({
+      await saveRun({
         id: newId(),
         createdAt: new Date().toISOString(),
         durationMs: Date.now() - t0,
@@ -12411,7 +12674,7 @@ async function api(path, opts = {}) {
     } catch (err) {
       /* A sikertelen és a leállított futás is bekerül az előzményekbe,
          hogy később lássd, mit próbáltál és min bukott el. */
-      saveRun({
+      await saveRun({
         id: newId(),
         createdAt: new Date().toISOString(),
         durationMs: Date.now() - t0,
@@ -12432,21 +12695,7 @@ async function api(path, opts = {}) {
 
   /* ---------------- Előzmények ---------------- */
   if (path === '/api/runs') {
-    return {
-      runs: loadRuns().map((r) => ({
-        id: r.id,
-        url: r.site?.finalUrl || r.requestedUrl,
-        createdAt: r.createdAt,
-        status: r.status || 'ok',
-        error: r.error?.message || null,
-        score: r.rules?.score?.overall ?? null,
-        grade: r.rules?.score?.grade ?? null,
-        hasDeepAudit: Boolean(r.deepAudit),
-        hasMarketing: Boolean(r.marketing),
-        hasDeepScan: Boolean(r.deepScan),
-        counts: r.rules?.score?.counts ?? null,
-      })),
-    };
+    return { runs: await RunStore.list() };
   }
 
   const runMatch = /^\/api\/run\/([\w-]+)(?:\/(.+))?$/.exec(path);
@@ -12455,11 +12704,11 @@ async function api(path, opts = {}) {
 
     if (!action && method === 'GET') return getRun(id);
     if (!action && method === 'DELETE') {
-      persistRuns(loadRuns().filter((r) => r.id !== id));
+      await RunStore.remove(id);
       return { ok: true };
     }
 
-    const run = getRun(id);
+    const run = await getRun(id);
 
     /* --- AI: részletes audit --- */
     if (action === 'deep-audit') {
@@ -12470,7 +12719,7 @@ async function api(path, opts = {}) {
         return saveRun(run);
       } catch (err) {
         run.deepAuditError = { message: err.message, aborted: isAbort(err), at: new Date().toISOString() };
-        saveRun(run);
+        await saveRun(run);
         throw err;
       } finally {
         clearAbort();
@@ -12486,7 +12735,7 @@ async function api(path, opts = {}) {
         return saveRun(run);
       } catch (err) {
         run.marketingError = { message: err.message, aborted: isAbort(err), at: new Date().toISOString() };
-        saveRun(run);
+        await saveRun(run);
         throw err;
       } finally {
         clearAbort();
@@ -12512,7 +12761,7 @@ async function api(path, opts = {}) {
         return saveRun(run);
       } catch (err) {
         run.deepScanError = { message: err.message, aborted: isAbort(err), at: new Date().toISOString() };
-        saveRun(run);
+        await saveRun(run);
         throw err;
       } finally {
         clearAbort();
@@ -12790,8 +13039,8 @@ function openPrintView(run, markdownOverride) {
  * Tömeges export (Előzmények fül)
  * ------------------------------------------------------------------ */
 
-function exportAllRuns(kind) {
-  const runs = loadRuns();
+async function exportAllRuns(kind) {
+  const runs = await RunStore.all();
   if (!runs.length) return toast('Nincs mentett elemzés.');
 
   const stamp = new Date().toISOString().slice(0, 10);
@@ -13300,10 +13549,13 @@ $('#btnSettings').addEventListener('click', () => {
  * ezt egyszer, jól láthatóan megmondjuk – különben a felhasználó azt hinné,
  * hogy elvesztek a beállításai.
  */
-function renderStorageBanner() {
+async function renderStorageBanner() {
   if (storageWorks) return;
   const hero = document.querySelector('#hero');
   if (!hero || document.querySelector('#storageBanner')) return;
+  await RunStore.ready;
+  // Az elemzések külön tárban (IndexedDB) vannak, az ettől még működhet
+  const runsKept = RunStore.mode() === 'idb';
 
   const div = document.createElement('div');
   div.id = 'storageBanner';
@@ -13311,7 +13563,9 @@ function renderStorageBanner() {
   div.style.cssText = 'background:var(--warning-bg);color:var(--warning);margin-top:14px';
   div.innerHTML = `
     <b>Ez a böngésző nem engedi a tartós mentést.</b><br>
-    Minden működik, de a beállítások és az elemzések csak addig maradnak meg, amíg nyitva van a lap.
+    ${runsKept
+      ? 'Minden működik, az elemzések is megmaradnak, de a beállítások (AI kulcs, ügyfelek, arculat) csak addig, amíg nyitva van a lap.'
+      : 'Minden működik, de a beállítások és az elemzések csak addig maradnak meg, amíg nyitva van a lap.'}
     Ez a Safarinál szokott előfordulni, ha a fájlt közvetlenül a Finderből nyitod meg.
     Ha zavar, nyisd meg ugyanezt a fájlt <b>Chrome-ban</b> – ott megjegyzi.`;
   hero.appendChild(div);

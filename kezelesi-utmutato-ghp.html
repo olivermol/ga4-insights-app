@@ -376,7 +376,7 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
   <ul>
     <li>Az <b class="ui">Előzmények</b> fülön a korábbi elemzések listája látható pontszámmal, dátummal és címkékkel (pl. <span class="chip">mély</span>, <span class="chip">részletes</span>, <span class="chip">marketing</span>).</li>
     <li>Egy sorra kattintva az elemzés újra megnyílik; a <b class="ui">✕</b> gomb törli.</li>
-    <li>A böngésző legfeljebb 25 elemzést őriz meg; ha betelik a tárhely, a legrégebbiek törlődnek. Amit meg akarsz tartani, exportáld.</li>
+    <li>Az elemzések száma nincs korlátozva, és az app magától egyet sem töröl. Ha viszont a böngésző adatait törlöd, velük együtt az elemzések is elvesznek – amit meg akarsz tartani, exportáld.</li>
   </ul>
   <h3>Ügyfelek</h3>
   <ul>
@@ -426,7 +426,7 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
     <thead><tr><th>Adat</th><th>Hol van / hová megy</th></tr></thead>
     <tbody>
       <tr><td>Beállítások, AI kulcs, ügyfelek, logó</td><td>A böngésző helyi tárolójában (<code>localStorage</code>), ezen az eszközön és ebben a böngészőben.</td></tr>
-      <tr><td>Elemzések (Előzmények)</td><td>Szintén a böngésző helyi tárolójában, legfeljebb 25 darab.</td></tr>
+      <tr><td>Elemzések (Előzmények)</td><td>Szintén a böngészőben, ezen az eszközön: a böngésző helyi adatbázisában (<code>IndexedDB</code>), darabszám-korlát nélkül.</td></tr>
       <tr><td>A vizsgált oldal letöltése</td><td>Először közvetlenül a vizsgált oldalról; ha az nem engedi, <b>nyilvános CORS proxy szolgáltatásokon</b> keresztül (pl. allorigins, codetabs, cors.isomorphic-git), vagy a saját proxyn, ha megadtál ilyet. Ilyenkor a vizsgált cím és az oldal tartalma áthalad az adott proxyn. Ugyanígy tölti le az app a robots.txt-t, a sitemapet, a GTM konténert és néhány külső szkriptet.</td></tr>
       <tr><td>AI elemzés</td><td>Közvetlenül a választott szolgáltatóhoz megy (pl. Google Gemini), a te kulcsoddal. Az elemzés összesített adatai kerülnek elküldésre, köztes szerver nélkül.</td></tr>
       <tr><td>GTM export, beillesztett forráskód</td><td>A böngésződben dolgozza fel az app, nem töltődik fel.</td></tr>
