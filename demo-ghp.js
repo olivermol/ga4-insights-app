@@ -1520,7 +1520,7 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
     });
   });
 
-  /* „Letöltés”: az app ZIP-ben – a demó réteg nélkül, a látogató saját adataival (AI kulcs nélkül) és a letölthető útmutatóval */
+  /* „Letöltés”: az app ZIP-ben – a demó réteg nélkül, a látogató saját adataival (AI kulcs és saját proxy nélkül) és a letölthető útmutatóval */
 
   /* A letöltött index.html-be kerülő, demótól független kód. Szövegként (Function.prototype.toString) kerül át. */
   function ga4SavedImport() {
@@ -1719,6 +1719,8 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
     if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
       apiKey = typeof settings.apiKey === 'string' ? settings.apiKey.trim() : '';
       delete settings.apiKey;
+      /* A saját proxy a letöltőé (az ő kvótája, esetleg kulccsal) – nem öröklődhet arra, akinek továbbadja a ZIP-et */
+      delete settings.customProxy;
     } else {
       settings = null;
     }
