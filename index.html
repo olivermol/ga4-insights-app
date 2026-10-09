@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GA4 Insights v5.10 – mérési és marketing audit</title>
+<title>GA4 Insights v5.11 – mérési és marketing audit</title>
 <meta name="description" content="Egyfájlos mérési (GA4/GTM/Meta) és online marketing audit eszköz, Things 3 exporttal.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📊</text></svg>">
 <style>
@@ -756,7 +756,7 @@ dialog footer { padding: 13px 18px; border-top: 1px solid var(--border); display
 <div class="app">
 
   <header class="masthead">
-    <div class="logo"><span class="dot"></span> GA4 Insights <span class="chip" id="appVersion" title="Alkalmazás verziója">v5.10</span></div>
+    <div class="logo"><span class="dot"></span> GA4 Insights <span class="chip" id="appVersion" title="Alkalmazás verziója">v5.11</span></div>
     <div class="spacer"></div>
     <nav>
       <button class="ghost-btn active" data-view="analyze">Elemzés</button>
@@ -3389,7 +3389,7 @@ const { conversionRules } = __RulesConv;
 
 
 /** Az alkalmazás verziója – a riport fejlécében és az exportban is megjelenik. */
-const APP_VERSION = 'v5.10';
+const APP_VERSION = 'v5.11';
 
 /**
  * A Consent Mode állapota egy mondatban – a felület, a Markdown export és az
@@ -9072,8 +9072,9 @@ const Fetcher = (function () {
    Az oldal letöltése a BÖNGÉSZŐBŐL.
 
    A böngésző CORS miatt nem tud csak úgy letölteni egy idegen domain
-   HTML-jét. Ezért nyilvános CORS proxykon keresztül kérjük le, sorban
-   próbálva őket, amíg az egyik nem válaszol.
+   HTML-jét. Ezért proxyn keresztül kérjük le: először a beépítetten
+   (a GA4 Insights saját Cloudflare Workere), utána nyilvános CORS
+   proxykon, sorban próbálva őket, amíg az egyik nem válaszol.
 
    Következmények, amiket a riport is kiír:
      - a cél szerver HTTP fejléceit nem látjuk (tömörítés, HSTS, cache)
@@ -9096,6 +9097,18 @@ const Fetcher = (function () {
  * kulcsot, és nem korlátoz.
  */
 let customProxyTemplate = '';
+
+/**
+ * A beépített proxy: a GA4 Insights saját Cloudflare Workere. Csak ezt az
+ * appot szolgálja ki (a letöltött fájlt és a demót), csak oldalt, szöveget,
+ * XML-t és scriptet tölt le, legfeljebb 5 MB-ot, és címenként korlátozza a
+ * kérésszámot. Napi kerete van: ha elfogy vagy nem érhető el, a lánc megy
+ * tovább a nyilvános proxykra.
+ *
+ * A vizsgált oldal státuszkódját az `X-Upstream-Status` fejlécben adja vissza.
+ */
+const BUILTIN_PROXY_BASE = 'https://green-art-e34b.n9bsh7n8y4.workers.dev/';
+
 function setCustomProxy(template) {
   customProxyTemplate = String(template || '').trim();
   preferredProxy = null; // változott a lista, kezdjük elölről
@@ -9109,16 +9122,18 @@ function setCustomProxy(template) {
  * és bónuszként a VALÓS HTTP fejléceket is látjuk. Ha nem engedi, a fetch
  * azonnal elhasal (nincs várakozás), és megyünk a proxykra.
  *
+ * Utána a saját proxy (ha a felhasználó megadott ilyet), majd a beépített.
  * A nyilvános proxyk törékenyek: kifogynak, korlátoznak, megszűnnek, vagy
- * egyik napról a másikra kulcsot kérnek. Ezért van belőlük több, ezért lehet
- * sajátot megadni, és ezért van kézi mód is (beillesztett forrás).
+ * egyik napról a másikra kulcsot kérnek. Ezért csak tartaléknak vannak a
+ * beépített mögött, és ezért van kézi mód is (beillesztett forrás).
  */
 function proxyList() {
   const list = [
     { name: 'közvetlen', direct: true, build: (u) => u },
   ];
 
-  if (customProxyTemplate) {
+  // A korábbi letöltésekben a beépített proxy címe saját proxyként is szerepelhet – ne próbáljuk kétszer
+  if (customProxyTemplate && !customProxyTemplate.startsWith(BUILTIN_PROXY_BASE)) {
     list.push({
       name: 'saját proxy',
       custom: true,
@@ -9130,6 +9145,7 @@ function proxyList() {
   }
 
   list.push(
+    { name: 'beépített proxy', builtin: true, build: (u) => `${BUILTIN_PROXY_BASE}?url=${encodeURIComponent(u)}` },
     { name: 'allorigins', build: (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
     { name: 'codetabs', build: (u) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}` },
     { name: 'cors.isomorphic-git', build: (u) => `https://cors.isomorphic-git.org/${u}` },
@@ -9207,6 +9223,7 @@ async function proxyFetchText(targetUrl, { optional = false, signal } = {}) {
     : all;
 
   const errors = [];
+  let notFound = 0;
 
   for (const proxy of order) {
     const t0 = performance.now();
@@ -9217,6 +9234,16 @@ async function proxyFetchText(targetUrl, { optional = false, signal } = {}) {
         signal
       );
       if (!res.ok) {
+        /* A beépített proxy megmondja, ha a VIZSGÁLT oldal válaszolt hibával.
+           A 404/410 végleges (nincs ilyen oldal), ezt más proxy sem látná
+           másképp – nem járjuk végig érte a láncot, ami időtúllépésekkel
+           percekig is tarthat (pl. hiányzó sitemap_index.xml). */
+        const upstream = proxy.builtin ? Number(res.headers.get('x-upstream-status')) : 0;
+        if (upstream === 404 || upstream === 410) {
+          errors.push(`${proxy.name}: a vizsgált oldal HTTP ${upstream}-et adott`);
+          notFound = upstream;
+          break;
+        }
         // A 401/403 jellemzően azt jelenti, hogy a szolgáltatás mostantól
         // kulcsot kér; a 429 a napi korlátot. Mindkettő hasznos információ.
         const why =
@@ -9280,6 +9307,15 @@ async function proxyFetchText(targetUrl, { optional = false, signal } = {}) {
 
   if (optional) return null;
 
+  if (notFound) {
+    const e = new Error(
+      `A vizsgált oldal nem található (HTTP ${notFound}):\n${targetUrl}\n\nEllenőrizd, hogy jól írtad-e be a címet.`
+    );
+    e.proxyErrors = errors;
+    e.code = 'TARGET_NOT_FOUND';
+    throw e;
+  }
+
   /* A hibaüzenet mondja meg, mi a következő lépés – ne a felhasználónak
      kelljen kitalálnia. Ha bármelyik proxy adott valódi HTTP státuszt,
      akkor az internet működik, csak a szolgáltatás nem áll rendelkezésre. */
@@ -9293,12 +9329,12 @@ async function proxyFetchText(targetUrl, { optional = false, signal } = {}) {
       ...errors.map((x) => '· ' + x),
       '',
       gotHttpStatus
-        ? 'Az internetkapcsolat rendben van (volt válasz a szerverektől), csak a nyilvános proxyk nem elérhetők most.'
+        ? 'Az internetkapcsolat rendben van (volt válasz a szerverektől), csak a letöltő szolgáltatások nem elérhetők most.'
         : 'Úgy tűnik, egyik szolgáltatás sem volt elérhető. Ellenőrizd az internetkapcsolatot, és azt is, hogy egy reklámblokkoló vagy céges hálózati szűrő nem tiltja-e ezeket a címeket.',
       '',
       'MIT TEHETSZ MOST:',
       '1. Kézi mód – nyisd meg a vizsgált oldalt, Ctrl/Cmd+U (forrás megtekintése), másold ki az egészet, és illeszd be ide. Ez mindig működik, hálózat nélkül is.',
-      '2. Saját proxy – a Beállításokban megadhatsz egy sajátot (kész Cloudflare Worker kóddal, 2 perc alatt kész, ingyenes). Ezután soha nem függsz idegen szolgáltatástól.',
+      '2. Próbáld újra később – a beépített letöltőnek napi kerete van, ami éjfélkor (UTC) újraindul.',
     ].join('\n')
   );
   e.proxyErrors = errors;
@@ -13627,17 +13663,17 @@ function buildSettingsDialog() {
       <div data-panel="fetch" hidden>
         <p style="color:var(--text-dim);font-size:13.8px;margin-top:0">
           A böngésző CORS miatt nem tud csak úgy letölteni idegen oldalt. Az app előbb
-          közvetlenül próbálkozik, majd nyilvános proxykon keresztül. Ezek a szolgáltatások
-          néha leállnak vagy kulcsot kérnek – ilyenkor két megbízható út marad:
-          <b>saját proxy</b> vagy <b>kézi mód</b>.
+          közvetlenül próbálkozik, majd a <b>beépített proxyn</b> keresztül – ehhez nem kell
+          semmit beállítanod. Ha az sem érhető el, nyilvános proxykkal próbálkozik, végül
+          marad a <b>kézi mód</b>.
         </p>
 
         <div class="field">
-          <label for="customProxy">Saját proxy (ajánlott)</label>
+          <label for="customProxy">Saját proxy (nem kötelező)</label>
           <input type="text" id="customProxy" placeholder="https://sajat-proxym.workers.dev/?url={url}">
           <div class="hint">
-            A <code>{url}</code> helyére kerül a vizsgált cím. Ha megadod, ez lesz az első választás,
-            és soha nem függsz idegen szolgáltatástól.
+            A <code>{url}</code> helyére kerül a vizsgált cím. Ha megadod, a beépített proxy elé kerül –
+            akkor kell, ha nem szeretnéd, hogy a vizsgált címek a beépített proxyn haladjanak át.
           </div>
         </div>
 
