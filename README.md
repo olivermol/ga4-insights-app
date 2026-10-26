@@ -33,9 +33,9 @@ A teendőket úgy rakja sorba, hogy ami előrébb áll, az a későbbiek nélkü
 
 ## Feladatok, előzmények, exportok
 
-- **Feladatok** – a teendők egy listában, P1–P3 prioritás szerint; kijelölve vagy egyenként átküldhetők a Things 3-ba.
+- **Feladatok** – a teendők egy listában, P1–P3 prioritás szerint.
 - **Előzmények és ügyfelek** – minden elemzés automatikusan mentődik (darabszám-korlát nélkül), ügyfélhez rendelhető, és bármikor újra megnyitható.
-- **Exportok** – PDF (nyomtatási nézet), Markdown, feladatok és megállapítások CSV-ben, Things JSON, teljes JSON; az összes elemzés egyszerre is exportálható.
+- **Exportok** – PDF (nyomtatási nézet), Markdown, feladatok és megállapítások CSV-ben, teljes JSON; az összes elemzés egyszerre is exportálható.
 - **Saját arculat** – a riport fejlécébe készítőnév és logó tehető.
 - Világos és sötét téma.
 

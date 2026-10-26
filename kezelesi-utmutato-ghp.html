@@ -177,7 +177,7 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
     <li><a href="#ai-kulcs">3. AI kulcs beállítása (ingyenes Gemini)</a></li>
     <li><a href="#eredmeny">Az eredmény részei</a></li>
     <li><a href="#ai-elemzesek">Részletes audit és marketing elemzés</a></li>
-    <li><a href="#feladatok">Feladatok és Things 3</a></li>
+    <li><a href="#feladatok">Feladatok</a></li>
     <li><a href="#spec-es-utm">Eszközök: mérési specifikáció, UTM</a></li>
     <li><a href="#elozmenyek">Előzmények és ügyfelek</a></li>
     <li><a href="#export">Exportok (PDF, Markdown, CSV, JSON)</a></li>
@@ -328,7 +328,6 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
   <ul>
     <li>Gomb: <b class="ui">Részletes audit készítése</b>.</li>
     <li>Az alap auditot értelmezi és kiegészíti: vezetői összefoglaló, mérési érettség, <b class="ui">Javasolt mérési terv</b> eseményszinten, <b class="ui">Ütemterv</b> és <b class="ui">További megállapítások</b>.</li>
-    <li>Az ütemterv fázisainál a <b class="ui">↗ Things</b> gomb az adott fázis feladatait küldi a Things 3-ba.</li>
   </ul>
   <h3>Online marketing elemzés</h3>
   <ul>
@@ -340,16 +339,8 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
 </section>
 
 <section class="card" id="feladatok">
-  <h2>Feladatok és Things 3 <a class="top" href="#top">↑ fel</a></h2>
+  <h2>Feladatok <a class="top" href="#top">↑ fel</a></h2>
   <p>A <b class="ui">Feladatok</b> kártya egy listában gyűjti a teendőket az alap auditból, a részletes auditból és a marketing elemzésből, P1–P3 prioritás szerint rendezve. A <b class="ui">Részletek</b> alatt a leírás és az alfeladatok olvashatók.</p>
-  <ul>
-    <li>Kijelölés: <b class="ui">Mind kijelöl</b>, <b class="ui">Kijelölés törlése</b>, <b class="ui">Csak P1</b>, vagy egyenként a jelölőnégyzettel.</li>
-    <li><b class="ui">↗ Kijelöltek a Things 3-ba</b>: a kijelölt feladatok új Things projektként kerülnek át.</li>
-    <li><b class="ui">↗ Things</b> egy feladat mellett: csak azt az egyet küldi a Things Inboxába.</li>
-  </ul>
-  <div class="note">
-    <p>A Things 3 küldéshez a Things 3 alkalmazásnak telepítve kell lennie azon az eszközön, ahol a böngésző fut. Ha nem használod, a feladatokat CSV-ben is kiexportálhatod (<a href="#export">Exportok</a>).</p>
-  </div>
 </section>
 
 <section class="card" id="spec-es-utm">
@@ -359,7 +350,6 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
   <ul>
     <li><b class="ui">Megnézem</b> – megjeleníti az oldalon (hány esemény van meg és hány hiányzik).</li>
     <li><b class="ui">Letöltés (.md)</b> – Markdown fájlként menti.</li>
-    <li><b class="ui">Things 3-ba</b> – a hiányzó események bevezetését feladatként küldi át.</li>
   </ul>
   <h3>UTM építő és ellenőrző</h3>
   <p>A <b class="ui">Megnyitom</b> gomb három fület nyit:</p>
@@ -380,9 +370,9 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
   </ul>
   <h3>Ügyfelek</h3>
   <ul>
-    <li>Az <b class="ui">Elemzés</b> fülön az <b class="ui">Ügyfél:</b> sávban a <b class="ui">+ Új ügyfél</b> gombbal vehetsz fel ügyfelet (név és opcionálisan Things 3 Area), a listából pedig kiválaszthatod az aktuálisat.</li>
+    <li>Az <b class="ui">Elemzés</b> fülön az <b class="ui">Ügyfél:</b> sávban a <b class="ui">+ Új ügyfél</b> gombbal vehetsz fel ügyfelet, a listából pedig kiválaszthatod az aktuálisat.</li>
     <li>Az elemzés a kiválasztott ügyfélhez készül: a neve megjelenik az eredmény fejlécében és a riportokban.</li>
-    <li>Az ügyfeleket a <b class="ui">Beállítások</b> → <b class="ui">Riport &amp; Things</b> fülön kezelheted (Things Area módosítása, törlés).</li>
+    <li>Az ügyfeleket a <b class="ui">Beállítások</b> → <b class="ui">Riport</b> fülön törölheted.</li>
   </ul>
 </section>
 
@@ -396,14 +386,13 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
       <tr><td class="ui">Markdown</td><td>A teljes riport <code>.md</code> fájlban.</td></tr>
       <tr><td class="ui">Feladatok CSV</td><td>A feladatlista táblázatként (Excelben megnyitható).</td></tr>
       <tr><td class="ui">Megállapítások CSV</td><td>A megállapítások táblázatként.</td></tr>
-      <tr><td class="ui">Things JSON</td><td>A feladatok Things projektként, JSON fájlban.</td></tr>
       <tr><td class="ui">Teljes JSON</td><td>Az elemzés összes adata.</td></tr>
     </tbody>
   </table></div>
   <h3>Az összes elemzés exportja</h3>
   <p>Az <b class="ui">Előzmények</b> fülön, az <b class="ui">Összes exportálása:</b> sorban: <b class="ui">Összefoglaló CSV</b>, <b class="ui">Feladatok CSV</b>, <b class="ui">Megállapítások CSV</b>, <b class="ui">Markdown</b>, <b class="ui">JSON</b>.</p>
   <h3>Saját arculat a riporton</h3>
-  <p>A <b class="ui">Beállítások</b> → <b class="ui">Riport &amp; Things</b> fülön megadhatod a <b class="ui">Készítő (ügynökség / saját név)</b> nevet és egy <b class="ui">Logó a riportra</b> képet (max. 300 KB). Ezek a PDF és a Markdown riport fejlécében jelennek meg; a logót a böngésző menti el, nem töltődik fel sehova.</p>
+  <p>A <b class="ui">Beállítások</b> → <b class="ui">Riport</b> fülön megadhatod a <b class="ui">Készítő (ügynökség / saját név)</b> nevet és egy <b class="ui">Logó a riportra</b> képet (max. 300 KB). Ezek a PDF és a Markdown riport fejlécében jelennek meg; a logót a böngésző menti el, nem töltődik fel sehova.</p>
 </section>
 
 <section class="card" id="beallitasok">
@@ -414,7 +403,7 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
       <tr><td class="ui">AI szolgáltató</td><td>Szolgáltató, API kulcs, modell (<b class="ui">Lista</b>), webes keresés, <b class="ui">Kapcsolat teszt</b>.</td></tr>
       <tr><td class="ui">Letöltés</td><td><b class="ui">Saját proxy (nem kötelező)</b> megadása, útmutató saját ingyenes proxy készítéséhez, <b class="ui">Proxy teszt futtatása</b>.</td></tr>
       <tr><td class="ui">Vizsgálat</td><td>A mély vizsgálat által bejárt oldalak és ellenőrzött belső linkek száma.</td></tr>
-      <tr><td class="ui">Riport &amp; Things</td><td>Készítő neve, ügyfelek, logó, <b class="ui">Things 3 – alapértelmezett célterület (Area)</b>.</td></tr>
+      <tr><td class="ui">Riport</td><td>Készítő neve, ügyfelek, logó.</td></tr>
     </tbody>
   </table></div>
   <p>A módosítások a <b class="ui">Mentés</b> gombbal lépnek életbe. A felső menü <b class="ui">◐</b> gombja világos és sötét téma között vált; alapból a rendszer beállítását követi.<span data-csak-letoltott hidden> Az <b class="ui">Útmutató</b> gomb ezt az útmutatót nyitja meg az appon belül; a <b class="ui">✕ Bezárás</b> gombbal, az <kbd>Esc</kbd> billentyűvel vagy a <b class="ui">← Vissza az apphoz</b> gombbal zárható.</span></p>
@@ -464,10 +453,6 @@ footer.foot { color: var(--text-faint); font-size: 13.5px; border-top: 1px solid
       <li>Ellenőrizd a modellt: a <b class="ui">Lista</b> gombbal válassz olyat, amelyet a kulcsod elér.</li>
       <li>Ha a hiba keretre vagy kvótára utal (az ingyenes kulcsnak korlátai vannak), várj egy kicsit, vagy válassz a listából egy könnyebb modellt.</li>
     </ul>
-  </details>
-  <details>
-    <summary>Nem történik semmi a Things gombokra</summary>
-    <p>A küldéshez a Things 3 alkalmazásnak telepítve kell lennie azon az eszközön, ahol a böngésző fut. Nélküle használd a <b class="ui">Feladatok CSV</b> exportot.</p>
   </details>
   <details>
     <summary>Nem jelenik meg a PDF</summary>

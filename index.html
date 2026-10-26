@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GA4 Insights v5.11 – mérési és marketing audit</title>
-<meta name="description" content="Egyfájlos mérési (GA4/GTM/Meta) és online marketing audit eszköz, Things 3 exporttal.">
+<meta name="description" content="Egyfájlos mérési (GA4/GTM/Meta) és online marketing audit eszköz.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>📊</text></svg>">
 <style>
 /* ==================================================================
@@ -296,7 +296,6 @@ td code, .body code {
 .task .t-notes > :last-child { margin-bottom: 0; }
 .task .t-notes h2, .task .t-notes h3 { font-size: 14px; margin: 12px 0 5px; }
 .task .t-notes ul, .task .t-notes ol { padding-left: 20px; margin: 6px 0; }
-.task .t-actions { display: flex; gap: 6px; flex: none; }
 
 .prio { font-weight: 620; font-size: 11.5px; letter-spacing: .04em; }
 .prio.P1 { color: var(--critical); }
@@ -774,7 +773,7 @@ dialog footer { padding: 13px 18px; border-top: 1px solid var(--border); display
       <p class="lede">
         Megnézi a GA4, Google Tag Manager, Google Ads, Meta Pixel és Consent Mode beállításokat,
         ad egy alap technikai auditot, majd gombnyomásra részletes elemzést és online marketing
-        javaslatokat készít – a feladatokat pedig átküldi a Things 3-ba.
+        javaslatokat készít.
       </p>
       <div id="clientBar" class="clientbar hidden"></div>
 
@@ -850,7 +849,7 @@ dialog footer { padding: 13px 18px; border-top: 1px solid var(--border); display
   /** Csak biztonságos sémájú linkeket engedünk át. */
   function safeUrl(u) {
     const s = String(u || '').trim();
-    if (/^(https?:|mailto:|things:|#|\/)/i.test(s)) return esc(s);
+    if (/^(https?:|mailto:|#|\/)/i.test(s)) return esc(s);
     return '#';
   }
 
@@ -3380,7 +3379,7 @@ const { conversionRules } = __RulesConv;
 /**
  * A determinisztikus szabálymotor. Bemenet: a fetcher nyers adata + a detektorok
  * eredménye. Kimenet: "findings" (megállapítások) lista, mindegyikhez opcionálisan
- * egy konkrét feladat, amit a Things 3-ba lehet küldeni.
+ * egy konkrét feladat.
  *
  * Ez a rész NEM használ AI-t: ugyanarra az oldalra mindig ugyanazt adja,
  * ellenőrizhető és megmagyarázható. Az AI réteg erre épül rá.
@@ -3445,12 +3444,12 @@ function finding(o) {
     evidence: o.evidence || null,
     impact: o.impact || null,  // mit nyersz vele
     effort: o.effort || null,  // S | M | L
-    docs: o.docs || [],        // hivatkozások (a Things notes-ba is bekerülnek)
+    docs: o.docs || [],        // hivatkozások
     task: o.task || null,
   };
 }
 
-/** Feladatobjektum a Things 3-hoz. */
+/** Feladatobjektum. */
 function task(title, notes, { tags = [], when = null, checklist = [] } = {}) {
   return { title, notes, tags, when, checklist };
 }
@@ -4938,31 +4937,8 @@ const ruleHelpers = { finding, task };
 
 
 /* ==================================================================
-   5. Things 3 export
+   5. Feladatok
    ================================================================== */
-
-/**
- * Things 3 import. A Things az `things:///json?data=...` URL sémát támogatja,
- * amivel egy hívásból létre lehet hozni egy projektet a benne lévő feladatokkal,
- * fejlécekkel, jegyzetekkel, tagekkel és checklistekkel.
- *
- * Két dologra kell figyelni:
- *  1) A Things 3.13 óta a jegyzet (notes) mező MARKDOWN-t formáz, és a linkek
- *     kattinthatók – ezért érdemes strukturált markdownt küldeni.
- *  2) Az URL hossza korlátos. Hosszú jegyzeteknél a deep link elhasalhat,
- *     ezért darabolunk, és jelezzük, ha több hívás kell.
- *
- * Dokumentáció: https://culturedcode.com/things/support/articles/2803573/
- */
-
-/**
- * Egy biztonságosnak tekintett URL hossz. E fölött darabolunk.
- * A macOS ennél jóval hosszabbat is átad, de a Things-nél hosszú
- * payloadnál előfordul csendes eldobás – ezért tartunk tartalékot.
- */
-const MAX_URL_LENGTH = 40000;
-/** A Things jegyzetmezőjének gyakorlati korlátja. */
-const MAX_NOTES_LENGTH = 9500;
 
 const SEVERITY_TAG = {
   critical: 'Kritikus',
@@ -4970,148 +4946,9 @@ const SEVERITY_TAG = {
   opportunity: 'Lehetőség',
 };
 
-const PRIORITY_TAG = { P1: 'P1', P2: 'P2', P3: 'P3' };
-
-function clampNotes(notes) {
-  if (!notes) return '';
-  if (notes.length <= MAX_NOTES_LENGTH) return notes;
-  return notes.slice(0, MAX_NOTES_LENGTH - 40) + '\n\n…(a jegyzet rövidítve)';
-}
-
-/** Egy belső feladat → Things "to-do" objektum. */
-function toThingsTodo(t, { sourceUrl, runId, appBase } = {}) {
-  const tags = [...new Set([...(t.tags || []), ...(t.priority ? [PRIORITY_TAG[t.priority]] : [])])].filter(Boolean);
-
-  const footer = [];
-  if (sourceUrl) footer.push(`**Forrás oldal:** ${sourceUrl}`);
-  if (t.expectedImpact || t.expected_impact) footer.push(`**Várható hatás:** ${t.expectedImpact || t.expected_impact}`);
-  if (t.effort) footer.push(`**Ráfordítás:** ${t.effort}`);
-  if (appBase && runId) footer.push(`[Teljes audit megnyitása](${appBase}/#/run/${runId})`);
-
-  const notes = clampNotes([t.notes || '', footer.length ? '\n---\n' + footer.join(' · ') : ''].join('\n').trim());
-
-  const todo = {
-    type: 'to-do',
-    attributes: {
-      title: t.title,
-      notes,
-      tags,
-    },
-  };
-  if (t.when) todo.attributes.when = t.when;
-  if (t.deadline) todo.attributes.deadline = t.deadline;
-  if (Array.isArray(t.checklist) && t.checklist.length) {
-    todo.attributes['checklist-items'] = t.checklist.slice(0, 100).map((c) => ({
-      type: 'checklist-item',
-      attributes: { title: String(c).slice(0, 200) },
-    }));
-  }
-  return todo;
-}
-
-/**
- * Egyetlen feladat deep linkje (a "soronkénti + gomb"-hoz).
- * Ez a Things Inboxába teszi, hacsak nem adunk meg listát.
- */
-function singleTaskUrl(t, opts = {}) {
-  const todo = toThingsTodo(t, opts);
-  if (opts.listName) todo.attributes.list = opts.listName;
-  const data = encodeURIComponent(JSON.stringify([todo]));
-  return `things:///json?data=${data}&reveal=false`;
-}
-
-/**
- * Több feladat egy projektként, fejlécek (heading) szerint csoportosítva.
- * Ez a "mindet egyben" gomb.
- */
-function buildProject(tasks, { projectTitle, projectNotes, area, sourceUrl, runId, appBase } = {}) {
-  const groups = new Map();
-  for (const t of tasks) {
-    const key = t.section || t.group || 'Feladatok';
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(t);
-  }
-
-  const items = [];
-  for (const [heading, list] of groups) {
-    if (groups.size > 1) items.push({ type: 'heading', attributes: { title: heading } });
-    for (const t of list) items.push(toThingsTodo(t, { sourceUrl, runId, appBase }));
-  }
-
-  const project = {
-    type: 'project',
-    attributes: { title: projectTitle, notes: clampNotes(projectNotes || ''), items },
-  };
-  if (area) project.attributes.area = area;
-  return project;
-}
-function projectUrl(tasks, { projectTitle, projectNotes, area, sourceUrl, runId, appBase } = {}) {
-  const groups = new Map();
-  for (const t of tasks) {
-    const key = t.section || t.group || 'Feladatok';
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(t);
-  }
-
-  const items = [];
-  for (const [heading, list] of groups) {
-    if (groups.size > 1) {
-      items.push({ type: 'heading', attributes: { title: heading } });
-    }
-    for (const t of list) items.push(toThingsTodo(t, { sourceUrl, runId, appBase }));
-  }
-
-  const project = {
-    type: 'project',
-    attributes: {
-      title: projectTitle,
-      notes: clampNotes(projectNotes || ''),
-      items,
-    },
-  };
-  if (area) project.attributes.area = area;
-
-  const json = JSON.stringify([project]);
-  const url = `things:///json?data=${encodeURIComponent(json)}&reveal=true`;
-
-  if (url.length <= MAX_URL_LENGTH) {
-    return { urls: [url], chunked: false, taskCount: tasks.length, length: url.length };
-  }
-
-  /* --- Túl hosszú: daraboljuk. Az első hívás létrehozza a projektet,
-         a többi a projekt nevére hivatkozva tesz bele feladatokat. --- */
-  const urls = [];
-  const first = {
-    type: 'project',
-    attributes: { title: projectTitle, notes: clampNotes(projectNotes || ''), items: [] },
-  };
-  if (area) first.attributes.area = area;
-  urls.push(`things:///json?data=${encodeURIComponent(JSON.stringify([first]))}&reveal=true`);
-
-  let batch = [];
-  const flush = () => {
-    if (!batch.length) return;
-    urls.push(`things:///json?data=${encodeURIComponent(JSON.stringify(batch))}&reveal=false`);
-    batch = [];
-  };
-
-  for (const t of tasks) {
-    const todo = toThingsTodo(t, { sourceUrl, runId, appBase });
-    todo.attributes.list = projectTitle;
-    const probe = JSON.stringify([...batch, todo]);
-    if (encodeURIComponent(probe).length > MAX_URL_LENGTH - 200 && batch.length) {
-      flush();
-    }
-    batch.push(todo);
-  }
-  flush();
-
-  return { urls, chunked: true, taskCount: tasks.length, length: urls.reduce((s, u) => s + u.length, 0) };
-}
-
 /**
  * A futás eredményéből összeszedi az összes feladatot egységes formára.
- * Innen jön a lista a UI-nak, az exportoknak és a Things linkeknek is.
+ * Innen jön a lista a UI-nak és az exportoknak is.
  */
 function collectTasks(run) {
   const out = [];
@@ -5137,9 +4974,9 @@ function collectTasks(run) {
   }
 
   /* 2) Részletes (AI) audit feladatai.
-     Az ütemterv fázisai tartalmazzák a feladatokat – így a Things-ben is
-     fázisonkénti fejlécek alá kerülnek, vagyis ugyanaz a sorrend, amit az
-     audit javasol. A régi futásokban még külön `tasks` lista volt: azt is
+     Az ütemterv fázisai tartalmazzák a feladatokat – így fázisonkénti
+     szekciókba kerülnek, vagyis ugyanaz a sorrend, amit az audit javasol.
+     A régi futásokban még külön `tasks` lista volt: azt is
      kezeljük, hogy a korábbi elemzések ne romoljanak el. */
   for (const [pi, phase] of (run.deepAudit?.roadmap || []).entries()) {
     for (const [ti, t] of (phase.tasks || []).entries()) {
@@ -5756,7 +5593,7 @@ const DEEP_AUDIT_SCHEMA = {
             success_metric: { type: 'string', description: 'Miből tudod, hogy sikerült. Mérhető legyen.' },
             tasks: {
               type: 'array',
-              description: 'A fázis konkrét feladatai. Ezek kerülnek át a Things 3-ba.',
+              description: 'A fázis konkrét feladatai.',
               items: {
                 type: 'object',
                 properties: {
@@ -5793,7 +5630,7 @@ Alapelvek:
 - **A CMP-k futásidőben állítják be a Consent Mode-ot.** Ha van azonosított CMP (OneTrust, Cookiebot, Usercentrics…) vagy a GTM konténerben consent-hez kötött tagek vannak, akkor a Consent Mode hiányát NE állítsd – ilyenkor a helyes megfogalmazás az, hogy futásidőben (Tag Assistant → Consent fül) kell ellenőrizni. Ugyanez igaz a Meta Advanced Matchingre és a Google Ads Enhanced Conversionsre: ezek a szolgáltató felületén is bekapcsolhatók, a kódban nem látszanak.
 - Csak akkor kezeld webshopként az oldalt, ha \`isEcommerce\` igaz (az \`ecommerceSignals\` mondja meg, miért). Szolgáltató, időpontfoglalós vagy lead-generáló oldalnál ne kérj számon e-commerce mérést, ÁSZF-et, szállítási vagy elállási feltételeket.
 - Prioritizálj üzleti hatás szerint, ne technikai érdekesség szerint.
-- A feladatok legyenek konkrétak és önmagukban érthetőek – kikerülnek egy külső feladatkezelőbe (Things 3), ahol nem lesz meg ez a kontextus.
+- A feladatok legyenek konkrétak és önmagukban érthetőek – kikerülnek egy külső feladatkezelőbe, ahol nem lesz meg ez a kontextus.
 - A feladatok notes mezője Markdown: használj címsorokat, listákat, és tegyél bele hasznos dokumentációs linkeket teljes URL-lel.
 - Kerüld a semmitmondó általánosságokat. Ha nincs érdemi mondanivalód valamiről, hagyd ki.
 
@@ -6021,7 +5858,7 @@ Alapelvek:
 - Ne találj ki céget. Csak olyan versenytársat nevezz meg, amit a keresés valóban visszaadott, és aminek a létezésében biztos vagy. Ha nem találsz 5 valódi közvetlen versenytársat, adj kevesebbet és írd meg a method_note-ban, hogy miért.
 - Konkrét legyél. "Készíts jobb tartalmat" nem javaslat. "Írj összehasonlító cikket X vs Y témában, mert a konkurens Z-nek ez hozza a legtöbb organikus forgalmát" – ez javaslat.
 - Vedd figyelembe a cég valós méretét. Egy kis magyar vállalkozásnak ne javasolj TV-kampányt vagy 12 fős tartalomcsapatot.
-- A feladatok kikerülnek egy külső feladatkezelőbe (Things 3), ahol nem lesz meg a kontextus – ezért minden feladat legyen önmagában érthető, és a notes mező Markdown legyen, teljes URL-es linkekkel.
+- A feladatok kikerülnek egy külső feladatkezelőbe, ahol nem lesz meg a kontextus – ezért minden feladat legyen önmagában érthető, és a notes mező Markdown legyen, teljes URL-es linkekkel.
 - SOHA ne állítsd csak azt, hogy valami "nincs maximalizálva", "fejleszthető" vagy "hiányos". Mindig mondd meg a \`gaps\` mezőben, PONTOSAN mi hiányzik és hogyan pótolható. Ami a bemenetből vagy a keresésből nem látszik, azt jelöld \`ellenorizendo\`-nak, és írd le, hol nézze meg a tulajdonos. A hozzá tartozó feladat \`checklist\`-je a tényleges lépéseket tartalmazza.
 
 ## TARTALOMJAVASLATOK — KÖZHELY TILOS
@@ -7373,8 +7210,7 @@ const DlSpec = (function () {
  * Ez a modul az oldal típusa és a már meglévő mérés alapján legenerálja
  * a vázát – AI nélkül, sablonból, de a konkrét oldalhoz igazítva.
  *
- * A kimenet Markdown: átadható a fejlesztőnek, bemásolható a jegyzetekbe,
- * és a Things-be is átküldhető.
+ * A kimenet Markdown: átadható a fejlesztőnek, és bemásolható a jegyzetekbe.
  */
 
 /** Egy esemény leírása a specifikációban. */
@@ -10264,7 +10100,6 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const state = {
   config: null,
   run: null,
-  selected: new Set(),
   busy: false,
 };
 
@@ -10393,7 +10228,6 @@ $('#urlForm').addEventListener('submit', async (e) => {
 
   try {
     state.run = await api('/api/analyze', { method: 'POST', body: { url } });
-    state.selected = new Set();
     location.hash = `#/run/${state.run.id}`;
     renderRun();
   } catch (err) {
@@ -10448,7 +10282,7 @@ function renderClientBar() {
     <button class="btn tiny secondary" id="clientAdd">+ Új ügyfél</button>
     ${current ? `
       <span class="cb-active" title="Ehhez az ügyfélhez készül az elemzés és a riport">
-        ${esc(current.name)}${current.thingsArea ? ` · Things: ${esc(current.thingsArea)}` : ''}
+        ${esc(current.name)}
       </span>` : `
       <span class="cb-none">Nincs ügyfél kiválasztva – a riport ügyfélnév nélkül készül.</span>`}`;
 
@@ -10463,8 +10297,7 @@ function renderClientBar() {
   $('#clientAdd')?.addEventListener('click', async () => {
     const name = prompt('Az ügyfél neve:');
     if (!name?.trim()) return;
-    const area = prompt('Things 3 Area ehhez az ügyfélhez (opcionális, Enter = kihagy):') || '';
-    await api('/api/clients', { method: 'POST', body: { name: name.trim(), thingsArea: area.trim() } });
+    await api('/api/clients', { method: 'POST', body: { name: name.trim() } });
     state.config = await api('/api/config');
     renderClientBar();
     toast(`„${name.trim()}" kiválasztva.`);
@@ -10567,7 +10400,6 @@ async function runManualAnalysis() {
 
   try {
     state.run = await api('/api/analyze-manual', { method: 'POST', body: { url, html } });
-    state.selected = new Set();
     location.hash = `#/run/${state.run.id}`;
     $('#manualPanel').classList.add('hidden');
     $('#analyzeError').innerHTML = '';
@@ -11498,7 +11330,6 @@ function renderToolsSection(run) {
           <div class="chips">
             <button class="btn secondary small" data-tool="spec-view">Megnézem</button>
             <button class="btn secondary small" data-tool="spec-md">Letöltés (.md)</button>
-            <button class="btn secondary small" data-tool="spec-things">Things 3-ba</button>
           </div>
         </div>
         <div>
@@ -11596,8 +11427,7 @@ function renderDeepAuditSection(run) {
       ${da.roadmap?.length ? `
         <h3 style="font-size:15px;margin:24px 0 4px">Ütemterv</h3>
         <p style="color:var(--text-faint);font-size:13px;margin:0 0 14px">
-          Minden fázis konkrét feladatokból áll. Fázisonként vagy egyben átküldheted őket a Things 3-ba —
-          a sorrend megmarad.
+          Minden fázis konkrét feladatokból áll.
         </p>
         <div class="roadmap">
           ${da.roadmap.map((ph, pi) => `
@@ -11609,7 +11439,6 @@ function renderDeepAuditSection(run) {
                   ${ph.goal ? `<div class="phase-goal">${esc(ph.goal)}</div>` : ''}
                 </div>
                 ${ph.timeframe ? `<span class="chip accent">${esc(ph.timeframe)}</span>` : ''}
-                <button class="btn tiny secondary phase-things" data-phase="${pi}" title="A fázis feladatai a Things 3-ba">↗ Things</button>
               </div>
 
               ${ph.success_metric ? `
@@ -11818,17 +11647,7 @@ function renderTasksSection(run) {
   <div class="card" id="tasksCard">
     <header>
       <h2><span class="section-num">3</span> Feladatok (${tasks.length})</h2>
-      <div class="spacer"></div>
-      <span style="font-size:12.5px;color:var(--text-faint)" id="selCount"></span>
     </header>
-
-    <div class="toolbar">
-      <button class="btn secondary small" id="selAll">Mind kijelöl</button>
-      <button class="btn secondary small" id="selNone">Kijelölés törlése</button>
-      <button class="btn secondary small" id="selP1">Csak P1</button>
-      <div class="spacer"></div>
-      <button class="btn small" id="btnThingsBulk">↗ Kijelöltek a Things 3-ba</button>
-    </div>
 
     <div class="body tight">
       ${[...bySection].map(([section, list]) => `
@@ -11837,7 +11656,6 @@ function renderTasksSection(run) {
         </div>
         ${list.map((t) => `
           <div class="task" data-key="${esc(t.key)}">
-            <input type="checkbox" class="task-check" data-key="${esc(t.key)}">
             <div class="t-main">
               <div class="t-title">${esc(t.title)}</div>
               <div class="t-meta">
@@ -11851,9 +11669,6 @@ function renderTasksSection(run) {
                 ${t.checklist?.length ? `<ul style="margin-top:8px">${t.checklist.map((c) => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}
                 </div></details>` : ''}
             </div>
-            <div class="t-actions">
-              <button class="btn tiny secondary things-one" data-key="${esc(t.key)}" title="Ezt az egy feladatot a Things 3-ba">↗ Things</button>
-            </div>
           </div>`).join('')}
       `).join('')}
     </div>
@@ -11862,7 +11677,6 @@ function renderTasksSection(run) {
 
 /**
  * A `collectTasks` megjelenítési párja – csak a felülethez.
- * A tényleges Things payload mindig a `collectTasks`-ból készül, hogy egy forrás legyen.
  */
 function collectTasksClient(run) {
   const out = [];
@@ -11977,17 +11791,6 @@ function bindRunEvents() {
   /* --- Eszközök --- */
   $$('[data-tool]').forEach((btn) => btn.addEventListener('click', () => runTool(btn.dataset.tool)));
 
-  /* --- Ütemterv: egy fázis feladatai a Things-be --- */
-  $$('.phase-things').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const pi = Number(btn.dataset.phase);
-      const phase = state.run?.deepAudit?.roadmap?.[pi];
-      if (!phase?.tasks?.length) return toast('Ebben a fázisban nincs feladat.');
-      const keys = phase.tasks.map((_, ti) => `deep:${pi}:${ti}`);
-      sendToThings(keys, 'project', btn, `${phase.phase} – ${hostLabel()}`);
-    });
-  });
-
   /* --- AI gombok --- */
   $('#btnDeep')?.addEventListener('click', () => runAi('deep-audit', '#btnDeep', '#deepStatus',
     'Részletes audit készül – a modell átnézi az adatokat és kiegészíti az auditot…'));
@@ -11997,52 +11800,6 @@ function bindRunEvents() {
     runAi('marketing', '#btnMarketing', '#mktStatus',
       'Marketing elemzés készül – webes keresés a konkurensekre, majd a három szekció összeállítása. Ez 1–3 perc is lehet…',
       { extraContext: extra });
-  });
-
-  /* --- feladat kijelölés --- */
-  const updateCount = () => {
-    const n = state.selected.size;
-    const el = $('#selCount');
-    if (el) el.textContent = n ? `${n} kijelölve` : '';
-  };
-  $$('.task-check').forEach((cb) => {
-    cb.checked = state.selected.has(cb.dataset.key);
-    cb.addEventListener('change', () => {
-      if (cb.checked) state.selected.add(cb.dataset.key);
-      else state.selected.delete(cb.dataset.key);
-      updateCount();
-    });
-  });
-  updateCount();
-
-  $('#selAll')?.addEventListener('click', () => {
-    $$('.task-check').forEach((cb) => { cb.checked = true; state.selected.add(cb.dataset.key); });
-    updateCount();
-  });
-  $('#selNone')?.addEventListener('click', () => {
-    $$('.task-check').forEach((cb) => { cb.checked = false; });
-    state.selected.clear();
-    updateCount();
-  });
-  $('#selP1')?.addEventListener('click', () => {
-    state.selected.clear();
-    $$('.task').forEach((row) => {
-      const isP1 = row.querySelector('.prio')?.textContent.trim() === 'P1';
-      const cb = row.querySelector('.task-check');
-      cb.checked = isP1;
-      if (isP1) state.selected.add(cb.dataset.key);
-    });
-    updateCount();
-  });
-
-  /* --- Things 3 --- */
-  $$('.things-one').forEach((btn) => {
-    btn.addEventListener('click', () => sendToThings([btn.dataset.key], 'single', btn));
-  });
-  $('#btnThingsBulk')?.addEventListener('click', (e) => {
-    const keys = [...state.selected];
-    if (!keys.length) return toast('Előbb jelölj ki legalább egy feladatot.');
-    sendToThings(keys, 'project', e.currentTarget);
   });
 }
 
@@ -12111,65 +11868,6 @@ function stopCurrent() {
   }
 }
 
-/* ---------------------------- Things 3 ----------------------------- */
-
-/**
- * Egyedi URL séma (things://) megnyitása anélkül, hogy elnavigálnánk az oldalról.
- *
- * `location.href` a legmegbízhatóbb: minden böngésző átadja az OS-nek, és mivel
- * a things:// nem HTTP, az oldal nem töltődik újra. Safari a rejtett iframe-es
- * trükköt néha blokkolja, ezért azt csak második hívástól használjuk (amikor
- * több linket kell egymás után megnyitni).
- */
-function openScheme(url, { useIframe = false } = {}) {
-  if (!useIframe) {
-    window.location.href = url;
-    return;
-  }
-  const frame = document.createElement('iframe');
-  frame.style.display = 'none';
-  frame.src = url;
-  document.body.appendChild(frame);
-  setTimeout(() => frame.remove(), 3000);
-}
-
-function hostLabel() {
-  try {
-    return new URL(state.run.site.finalUrl).hostname.replace(/^www\./, '');
-  } catch {
-    return 'audit';
-  }
-}
-
-async function sendToThings(keys, mode, btn, projectTitle) {
-  const orig = btn?.innerHTML;
-  if (btn) { btn.disabled = true; btn.innerHTML = '…'; }
-  try {
-    const res = await api(`/api/run/${state.run.id}/things`, {
-      method: 'POST',
-      body: { keys, mode, projectTitle },
-    });
-
-    // A things:// egyedi URL séma. Több hívásnál a location.href felülírná
-    // egymást, ezért rejtett iframe-ekkel nyitjuk meg őket, késleltetve –
-    // így a macOS mindegyiket átadja a Things-nek.
-    for (const [i, url] of res.urls.entries()) {
-      if (i > 0) await new Promise((r) => setTimeout(r, 1100));
-      openScheme(url, { useIframe: i > 0 });
-    }
-
-    if (res.chunked) {
-      toast(`${res.taskCount} feladat elküldve ${res.urls.length} részletben (hosszú jegyzetek miatt).`, 5000);
-    } else {
-      toast(mode === 'single' ? 'Feladat elküldve a Things Inboxába.' : `${res.taskCount} feladat elküldve új Things projektként.`);
-    }
-  } catch (err) {
-    toast('Things hiba: ' + err.message, 4500);
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
-  }
-}
-
 /* ------------------------------ Eszközök --------------------------- */
 
 function runTool(kind) {
@@ -12177,36 +11875,11 @@ function runTool(kind) {
   const panel = $('#toolPanel');
   if (!run || !panel) return;
 
-  if (kind === 'spec-view' || kind === 'spec-md' || kind === 'spec-things') {
+  if (kind === 'spec-view' || kind === 'spec-md') {
     const spec = DlSpec.buildDataLayerSpec(run);
 
     if (kind === 'spec-md') {
       return downloadFile(filenameFor(run, 'md', 'meresi-specifikacio'), spec.markdown, 'text/markdown;charset=utf-8');
-    }
-
-    if (kind === 'spec-things') {
-      const missing = spec.missing.slice(0, 20);
-      if (!missing.length) return toast('Minden javasolt esemény megvan – nincs mit átküldeni.');
-      const tasks = missing.map((e, i) => ({
-        key: `spec:${i}`,
-        section: 'Mérési specifikáció',
-        priority: /purchase|generate_lead/.test(e.name) ? 'P1' : 'P2',
-        title: `Mérés: \`${e.name}\` esemény bevezetése`,
-        notes: [
-          `## Mikor sül el`,
-          e.when,
-          '',
-          `## Paraméterek`,
-          ...e.params.map((x) => `- \`${x}\``),
-          '',
-          `## Platformok`,
-          e.platforms.join(', '),
-          e.note ? `\n> ${e.note}` : '',
-        ].join('\n'),
-        tags: ['Mérés', 'dataLayer'],
-        checklist: [],
-      }));
-      return sendCustomTasksToThings(tasks, `Mérési spec – ${new URL(run.site.finalUrl).hostname}`);
     }
 
     panel.innerHTML = `
@@ -12349,18 +12022,6 @@ function bindUtmTool(run) {
   build();
 }
 
-/** Egyedi (nem az auditból származó) feladatlista küldése a Things-be. */
-async function sendCustomTasksToThings(tasks, projectTitle) {
-  try {
-    const project = buildProject(tasks, { projectTitle, sourceUrl: state.run.site.finalUrl });
-    const data = encodeURIComponent(JSON.stringify([project]));
-    openScheme(`things:///json?data=${data}&reveal=true`);
-    toast(`${tasks.length} feladat elküldve a Things-be.`);
-  } catch (err) {
-    toast('Things hiba: ' + err.message, 4500);
-  }
-}
-
 /** GTM konténer JSON beolvasása és elemzése – teljesen helyben. */
 function onGtmFile(e) {
   const file = e.target.files?.[0];
@@ -12450,7 +12111,6 @@ async function loadHistory() {
       row.addEventListener('click', async (e) => {
         if (e.target.classList.contains('del')) return;
         state.run = await api(`/api/run/${row.dataset.id}`);
-        state.selected = new Set();
         location.hash = `#/run/${state.run.id}`;
         renderRun();
       });
@@ -12481,7 +12141,7 @@ async function loadHistory() {
      tárolás           – elemzések: IndexedDB, beállítások: localStorage
      exportok          – Blob letöltés, futásonként és tömegesen
      PDF               – nyomtatási réteg az oldalon belül
-     Beállítások       – AI szolgáltató, kulcs, modell, Things Area,
+     Beállítások       – AI szolgáltató, kulcs, modell,
                          ügynökségi arculat (logó, cégnév, ügyfél)
    ================================================================== */
 
@@ -12549,7 +12209,6 @@ const DEFAULT_SETTINGS = {
   model: '',
   baseUrl: '',
   search: true,
-  thingsArea: '',
   // Letöltés
   customProxy: '',
   // Mély vizsgálat
@@ -12570,7 +12229,6 @@ function newClient(name) {
   return {
     id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     name: String(name || '').trim(),
-    thingsArea: '',
     notes: '',
     createdAt: new Date().toISOString(),
   };
@@ -12585,7 +12243,6 @@ function snapshotClient() {
   return {
     id: c?.id || null,
     name: c?.name || '',
-    thingsArea: c?.thingsArea || '',
     agencyName: settings.agencyName || '',
     logoDataUrl: settings.logoDataUrl || '',
     at: new Date().toISOString(),
@@ -13031,7 +12688,6 @@ async function api(path, opts = {}) {
 
     const existing = (settings.clients || []).find((c) => c.name.toLowerCase() === name.toLowerCase());
     const client = existing || newClient(name);
-    if (body.thingsArea !== undefined) client.thingsArea = String(body.thingsArea).trim();
     if (body.notes !== undefined) client.notes = String(body.notes).trim();
 
     const clients = existing
@@ -13272,38 +12928,6 @@ async function api(path, opts = {}) {
     }
 
     if (action === 'tasks') return { tasks: collectTasks(run) };
-
-    /* --- Things 3 --- */
-    if (action === 'things') {
-      const all = collectTasks(run);
-      const selected = Array.isArray(body.keys) && body.keys.length
-        ? all.filter((t) => body.keys.includes(t.key))
-        : all;
-      if (!selected.length) throw new Error('Nincs kiválasztott feladat.');
-
-      if (body.mode === 'single') {
-        return {
-          mode: 'single',
-          urls: [singleTaskUrl(selected[0], { sourceUrl: run.site.finalUrl })],
-          chunked: false,
-          taskCount: 1,
-        };
-      }
-
-      const dateStr = new Date(run.createdAt).toLocaleDateString('hu-HU');
-      const result = projectUrl(selected, {
-        projectTitle: body.projectTitle || `Audit – ${hostOf(run.site.finalUrl)} (${dateStr})`,
-        // Az ügyfélhez tartozó Things Area, ha van; különben az általános
-        area: (run.client?.thingsArea || settings.thingsArea || '').trim() || undefined,
-        projectNotes: [
-          `Automatikus audit: ${run.site.finalUrl}`,
-          `Pontszám: ${run.rules.score.overall}/100 (${run.rules.score.grade})`,
-          `Kritikus: ${run.rules.score.counts.critical} · Figyelmeztetés: ${run.rules.score.counts.warning} · Lehetőség: ${run.rules.score.counts.opportunity}`,
-        ].join('\n'),
-        sourceUrl: run.site.finalUrl,
-      });
-      return { mode: 'project', ...result };
-    }
   }
 
   throw new Error('Ismeretlen művelet: ' + path);
@@ -13339,7 +12963,6 @@ function renderExports(run) {
         <button class="btn secondary small" data-export="md">Markdown</button>
         <button class="btn secondary small" data-export="tasks-csv">Feladatok CSV</button>
         <button class="btn secondary small" data-export="findings-csv">Megállapítások CSV</button>
-        <button class="btn secondary small" data-export="things-json">Things JSON</button>
         <button class="btn secondary small" data-export="json">Teljes JSON</button>
       </div>
       <p style="font-size:12.8px;color:var(--text-faint);margin:12px 0 0">
@@ -13360,14 +12983,6 @@ function exportRun(run, kind) {
       return downloadFile(filenameFor(run, 'csv', 'megallapitasok'), findingsToCsv(run), 'text/csv;charset=utf-8');
     case 'json':
       return downloadFile(filenameFor(run, 'json'), JSON.stringify(run, null, 2), 'application/json;charset=utf-8');
-    case 'things-json': {
-      const project = buildProject(collectTasks(run), {
-        projectTitle: `Audit – ${hostOf(run.site.finalUrl)} (${new Date(run.createdAt).toLocaleDateString('hu-HU')})`,
-        projectNotes: `Automatikus audit: ${run.site.finalUrl}\nPontszám: ${run.rules.score.overall}/100 (${run.rules.score.grade})`,
-        sourceUrl: run.site.finalUrl,
-      });
-      return downloadFile(filenameFor(run, 'json', 'things'), JSON.stringify([project], null, 2), 'application/json;charset=utf-8');
-    }
     case 'pdf':
       return openPrintView(run);
   }
@@ -13608,7 +13223,7 @@ function buildSettingsDialog() {
         <button class="ghost-btn active" data-tab="ai">AI szolgáltató</button>
         <button class="ghost-btn" data-tab="fetch">Letöltés</button>
         <button class="ghost-btn" data-tab="scan">Vizsgálat</button>
-        <button class="ghost-btn" data-tab="report">Riport &amp; Things</button>
+        <button class="ghost-btn" data-tab="report">Riport</button>
       </div>
 
       <!-- ================= AI ================= -->
@@ -13736,14 +13351,6 @@ function buildSettingsDialog() {
           <div class="hint">Max. 300 KB. A képet a böngésző menti el, nem töltődik fel sehova.</div>
           <div id="logoPreview" style="margin-top:9px"></div>
         </div>
-        <div class="field">
-          <label for="thingsArea">Things 3 – alapértelmezett célterület (Area)</label>
-          <input type="text" id="thingsArea" placeholder="pl. Marketing (opcionális)">
-          <div class="hint">
-            Ide kerülnek az új projektek, ha az ügyfélhez nincs külön Area megadva.
-            Pontosan úgy írd, ahogy a Things-ben szerepel.
-          </div>
-        </div>
       </div>
 
       <div id="settingsStatus"></div>
@@ -13758,7 +13365,6 @@ function buildSettingsDialog() {
 
   /* --- kitöltés --- */
   $('#apiKeyInput').value = settings.apiKey || '';
-  $('#thingsArea').value = settings.thingsArea || '';
   $('#webSearchToggle').checked = settings.search !== false;
   $('#baseUrlInput').value = settings.baseUrl || '';
   $('#modelManual').value = settings.model || '';
@@ -13825,8 +13431,6 @@ function renderClientListSettings() {
             <span style="flex:1;font-weight:${c.id === settings.lastClientId ? 600 : 400}">
               ${esc(c.name)}${c.id === settings.lastClientId ? ' <span class="chip accent">aktív</span>' : ''}
             </span>
-            <input type="text" class="client-area" data-id="${esc(c.id)}" value="${esc(c.thingsArea || '')}"
-              placeholder="Things Area" style="width:150px;padding:4px 8px;font-size:12.5px">
             <button class="btn tiny secondary client-del" data-id="${esc(c.id)}" title="Törlés">✕</button>
           </div>`).join('')}
       </div>`
@@ -13838,15 +13442,6 @@ function renderClientListSettings() {
       settings = loadSettings();
       renderClientListSettings();
       renderClientBar();
-    })
-  );
-  el.querySelectorAll('.client-area').forEach((inp) =>
-    inp.addEventListener('change', () => {
-      const c = (settings.clients || []).find((x) => x.id === inp.dataset.id);
-      if (!c) return;
-      c.thingsArea = inp.value.trim();
-      settings = saveSettings({ ...settings });
-      toast('Mentve.');
     })
   );
 }
@@ -13912,7 +13507,6 @@ function readDialogSettings() {
     model: ($('#modelManual').value || $('#modelSelect').value || '').trim(),
     baseUrl: $('#baseUrlInput').value.trim(),
     search: $('#webSearchToggle').checked,
-    thingsArea: $('#thingsArea').value.trim(),
     customProxy: $('#customProxy').value.trim(),
     deepPageLimit: Math.max(3, Math.min(60, Number($('#deepPageLimit').value) || 15)),
     deepLinkLimit: Math.max(0, Math.min(60, Number($('#deepLinkLimit').value) || 0)),

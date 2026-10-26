@@ -112,7 +112,6 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
   "client": {
     "id": null,
     "name": "DEMÓ – Példa Webshop (kitalált)",
-    "thingsArea": "",
     "agencyName": "",
     "logoDataUrl": "",
     "at": "2026-09-15T08:00:00.000Z"
@@ -1964,7 +1963,6 @@ html { scroll-padding-top: var(--ga4demo-h, 0px); }
       api('/api/run/' + DEMO_ID).then(function (run) {
         if (state.run || state.busy) return;
         state.run = run;
-        state.selected = new Set();
         location.hash = '#/run/' + run.id;
         renderRun();
       }).catch(function () { /* nincs demó – nem baj */ });
